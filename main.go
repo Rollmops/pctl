@@ -5,13 +5,17 @@ import (
 	"os"
 
 	"github.com/Rollmops/pctl/app"
+	"github.com/Rollmops/pctl/config"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
 	pctlApp := app.CreateCliApp()
 	pctlApp.Run(os.Args)
+	log.Debug("Starting appliction pctl")
 
-	configPath := app.GetConfigPath()
-	processMap := app.LoadProcessConfig(configPath)
-	fmt.Println((*processMap)["b"].Cmd)
+	_config := config.LoadConfig()
+
+	fmt.Println(_config.Processes)
 }
