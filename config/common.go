@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
 )
 
 const _configFileName string = "pctl.yml"
@@ -29,14 +28,4 @@ func getConfigPath() string {
 	os.Exit(1)
 
 	return ""
-}
-
-// TODO support adding username after ~
-func ReplaceEnvVarsAndTilde(text string) string {
-	_text := os.ExpandEnv(text)
-
-	_text = strings.Replace(_text, "~", os.Getenv("HOME"), 1)
-
-	return _text
-
 }

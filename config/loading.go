@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 
 	"os"
 
@@ -19,42 +20,68 @@ type Config struct {
 }
 
 type rawConfig struct {
-	Include   []string
+	Includes  []string
 	Processes []ProcessConfig
 }
 
-func LoadConfig(path string) (Config, error) {
-	rawConfig := loadYamlFromPath(path)
+func LoadConfig(path string) (*Config, error) {
+	path, _ = filepath.Abs(os.ExpandEnv(path))
+	rawConfig, err := loadYamlFromPath(path)
+	if err != nil {
+		return nil, err
+	}
 
 	config := Config{
 		Processes: rawConfig.Processes,
 	}
 
-	for _, include := range rawConfig.Include {
-		rawConfig := loadYamlFromPath(include)
-
-		config.Processes = append(config.Processes, rawConfig.Processes...)
+	err = loadIncludes(path, rawConfig.Includes, &config)
+	if err != nil {
+		return nil, err
 	}
-
-	return config, nil
+	err = config.validate()
+	return &config, err
 }
 
-func loadYamlFromPath(path string) rawConfig {
-	content := loadFileContent(ReplaceEnvVarsAndTilde(path))
+func loadIncludes(baseConfigPath string, includes []string, config *Config) error {
+	for _, include := range includes {
+		include, _ = filepath.Abs(os.ExpandEnv(include))
+
+		includeMatches, err := filepath.Glob(include)
+		if err != nil {
+			return err
+		}
+		for _, include := range includeMatches {
+			if baseConfigPath == include {
+				return fmt.Errorf("Config file %s is trying to include itself", baseConfigPath)
+			}
+			rawConfig, err := loadYamlFromPath(include)
+			if err != nil {
+				return err
+			}
+			config.Processes = append(config.Processes, rawConfig.Processes...)
+		}
+	}
+	return nil
+}
+
+func loadYamlFromPath(path string) (*rawConfig, error) {
+	content, err := loadFileContent(path)
+	if err != nil {
+		return nil, err
+	}
 	var rawConfig rawConfig
 	if err := yaml.Unmarshal(content, &rawConfig); err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading YAML %s: %v\n", path, err)
-		os.Exit(1)
+		return nil, fmt.Errorf("Error reading YAML %s: %v", path, err)
 	}
 
-	return rawConfig
+	return &rawConfig, nil
 }
 
-func loadFileContent(path string) []byte {
+func loadFileContent(path string) ([]byte, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to load file path %s\n", path)
-		os.Exit(1)
+		return nil, fmt.Errorf("Unable to load file path %s", path)
 	}
-	return data
+	return data, nil
 }

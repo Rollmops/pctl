@@ -1,0 +1,3 @@
+processes:
+- name: from_second_yaml
+  cmd: exit 1

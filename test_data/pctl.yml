@@ -1,4 +1,4 @@
-include:
+includes:
   - ${TEST_DATA_DIR}/include.yml
 processes:
   - name: spserver

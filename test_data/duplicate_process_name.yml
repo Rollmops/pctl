@@ -1,0 +1,5 @@
+processes:
+- name: hans
+  cmd: huhu
+- name: hans
+  cmd: haha

@@ -3,6 +3,7 @@ package config_test
 import (
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/Rollmops/pctl/config"
@@ -36,6 +37,38 @@ func TestCircleInclude(t *testing.T) {
 
 	if err == nil {
 		t.Fatalf("Expected error but got nil")
+	}
+
+}
+
+func TestLoadConfigGlobIncludes(t *testing.T) {
+	setUp()
+	testConfigPath := path.Join(testDataDir, "glob_test.yml")
+
+	config, _ := config.LoadConfig(testConfigPath)
+
+	if processCount := len(config.Processes); processCount != 3 {
+		t.Fatalf("Expected process count of 3, got %d", processCount)
+	}
+}
+
+func TestDuplicateProcessNames(t *testing.T) {
+	setUp()
+	testConfigPath := path.Join(testDataDir, "duplicate_process_name.yml")
+
+	_, err := config.LoadConfig(testConfigPath)
+
+	if err == nil {
+		t.Fatalf("Expected duplicate process name error")
+	}
+}
+
+func TestAbsPathLearning(t *testing.T) {
+	absPath, _ := filepath.Abs("~")
+	homePath := os.Getenv("HOME")
+
+	if absPath == homePath {
+		t.Fatalf("%s == %s", absPath, homePath)
 	}
 
 }
