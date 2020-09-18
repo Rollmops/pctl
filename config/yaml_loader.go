@@ -10,23 +10,25 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type ProcessConfig struct {
-	Name string
-	Cmd  string
+type YamlLoader struct {
+	path string
 }
 
-type Config struct {
-	Processes []ProcessConfig
+func NewYamlLoader(path string) (*YamlLoader, error) {
+	path, err := filepath.Abs(os.ExpandEnv(path))
+	if err != nil {
+		return nil, err
+	}
+	return &YamlLoader{path: path}, nil
 }
 
-type rawConfig struct {
+type _rawConfig struct {
 	Includes  []string
 	Processes []ProcessConfig
 }
 
-func LoadConfig(path string) (*Config, error) {
-	path, _ = filepath.Abs(os.ExpandEnv(path))
-	rawConfig, err := loadYamlFromPath(path)
+func (l YamlLoader) Load() (*Config, error) {
+	rawConfig, err := loadYamlFromPath(l.path)
 	if err != nil {
 		return nil, err
 	}
@@ -35,11 +37,11 @@ func LoadConfig(path string) (*Config, error) {
 		Processes: rawConfig.Processes,
 	}
 
-	err = loadIncludes(path, rawConfig.Includes, &config)
+	err = loadIncludes(l.path, rawConfig.Includes, &config)
 	if err != nil {
 		return nil, err
 	}
-	err = config.validate()
+	err = config.Validate()
 	return &config, err
 }
 
@@ -65,12 +67,12 @@ func loadIncludes(baseConfigPath string, includes []string, config *Config) erro
 	return nil
 }
 
-func loadYamlFromPath(path string) (*rawConfig, error) {
+func loadYamlFromPath(path string) (*_rawConfig, error) {
 	content, err := loadFileContent(path)
 	if err != nil {
 		return nil, err
 	}
-	var rawConfig rawConfig
+	var rawConfig _rawConfig
 	if err := yaml.Unmarshal(content, &rawConfig); err != nil {
 		return nil, fmt.Errorf("error reading YAML %s: %s", path, err.Error())
 	}

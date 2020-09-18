@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (c Config) validate() error {
+func (c Config) Validate() error {
 	var processNames []string
 
 	for _, p := range c.Processes {

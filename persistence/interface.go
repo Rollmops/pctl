@@ -7,9 +7,9 @@ type Data struct {
 }
 
 type Writer interface {
-	write(data []Data) error
+	Write(data []Data) error
 }
 
 type Reader interface {
-	read() ([]Data, error)
+	Read() ([]Data, error)
 }
