@@ -72,7 +72,7 @@ func loadYamlFromPath(path string) (*rawConfig, error) {
 	}
 	var rawConfig rawConfig
 	if err := yaml.Unmarshal(content, &rawConfig); err != nil {
-		return nil, fmt.Errorf("error reading YAML %s: %v", path, err)
+		return nil, fmt.Errorf("error reading YAML %s: %s", path, err.Error())
 	}
 
 	return &rawConfig, nil
