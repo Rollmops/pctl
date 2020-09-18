@@ -9,7 +9,7 @@ func (c Config) validate() error {
 
 	for _, p := range c.Processes {
 		if isInList(processNames, p.Name) {
-			return fmt.Errorf("Found duplicate process name %s", p.Name)
+			return fmt.Errorf("found duplicate process name %s", p.Name)
 		}
 		processNames = append(processNames, p.Name)
 	}

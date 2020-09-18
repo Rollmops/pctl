@@ -53,7 +53,7 @@ func loadIncludes(baseConfigPath string, includes []string, config *Config) erro
 		}
 		for _, include := range includeMatches {
 			if baseConfigPath == include {
-				return fmt.Errorf("Config file %s is trying to include itself", baseConfigPath)
+				return fmt.Errorf("config file %s is trying to include itself", baseConfigPath)
 			}
 			rawConfig, err := loadYamlFromPath(include)
 			if err != nil {
@@ -72,7 +72,7 @@ func loadYamlFromPath(path string) (*rawConfig, error) {
 	}
 	var rawConfig rawConfig
 	if err := yaml.Unmarshal(content, &rawConfig); err != nil {
-		return nil, fmt.Errorf("Error reading YAML %s: %v", path, err)
+		return nil, fmt.Errorf("error reading YAML %s: %v", path, err)
 	}
 
 	return &rawConfig, nil
@@ -81,7 +81,7 @@ func loadYamlFromPath(path string) (*rawConfig, error) {
 func loadFileContent(path string) ([]byte, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to load file path %s", path)
+		return nil, fmt.Errorf("unable to load file path %s", path)
 	}
 	return data, nil
 }

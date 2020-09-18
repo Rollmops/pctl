@@ -24,7 +24,7 @@ func getConfigPath() string {
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "Unable to to find valid config path: %v\n", possibleConfigPaths)
+	_, _ = fmt.Fprintf(os.Stderr, "Unable to to find valid config path: %v\n", possibleConfigPaths)
 	os.Exit(1)
 
 	return ""

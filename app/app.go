@@ -21,7 +21,7 @@ func CreateCliApp() *cli.App {
 		Commands: []*cli.Command{
 			{
 				Name:  "version",
-				Usage: "show the verion information",
+				Usage: "show the version information",
 				Action: func(c *cli.Context) error {
 					fmt.Println("Version info")
 					return nil
@@ -32,7 +32,7 @@ func CreateCliApp() *cli.App {
 			logLevelString := c.String("loglevel")
 			level, err := log.ParseLevel(logLevelString)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to parse loglevel %s\n", logLevelString)
+				_, _ = fmt.Fprintf(os.Stderr, "Unable to parse loglevel %s\n", logLevelString)
 				os.Exit(1)
 			}
 			log.SetLevel(level)

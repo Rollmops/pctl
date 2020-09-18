@@ -12,8 +12,8 @@ import (
 
 func main() {
 	pctlApp := app.CreateCliApp()
-	pctlApp.Run(os.Args)
-	log.Debug("Starting appliction pctl")
+	_ = pctlApp.Run(os.Args)
+	log.Debug("Starting application pctl")
 
 	_config, _ := config.LoadConfig("")
 
