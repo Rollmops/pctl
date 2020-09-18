@@ -1,5 +1,0 @@
-include:
-  - ~/tmp/*.yml
-processes:
-  - name: spserver
-    cmd: spserver

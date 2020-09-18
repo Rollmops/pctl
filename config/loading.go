@@ -5,15 +5,9 @@ import (
 	"io/ioutil"
 
 	"os"
-	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
-
-type baseConfig struct {
-	Include []string
-}
 
 type ProcessConfig struct {
 	Name string
@@ -24,62 +18,36 @@ type Config struct {
 	Processes []ProcessConfig
 }
 
-func LoadConfig() Config {
-	log.Debug("Start loading config")
-	_baseConfig := loadBaseConfig()
-	log.Print(_baseConfig)
+type rawConfig struct {
+	Include   []string
+	Processes []ProcessConfig
+}
 
-	var processConfigs []ProcessConfig
-
-	for _, include := range _baseConfig.Include {
-		log.Debug("Including config ", include)
-		processConfigs = append(processConfigs, loadProcessConfigs(include)...)
-	}
+func LoadConfig(path string) (Config, error) {
+	rawConfig := loadYamlFromPath(path)
 
 	config := Config{
-		Processes: processConfigs,
+		Processes: rawConfig.Processes,
 	}
 
-	return config
+	for _, include := range rawConfig.Include {
+		rawConfig := loadYamlFromPath(include)
+
+		config.Processes = append(config.Processes, rawConfig.Processes...)
+	}
+
+	return config, nil
 }
 
-func loadBaseConfig() baseConfig {
-	configPath := GetConfigPath()
-	log.Debug("Loading basic config from ", configPath)
-	data := loadFileContent(configPath)
-
-	var _baseConfig baseConfig
-
-	if err := yaml.Unmarshal(data, &_baseConfig); err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading YAML %s: %v\n", configPath, err)
+func loadYamlFromPath(path string) rawConfig {
+	content := loadFileContent(ReplaceEnvVarsAndTilde(path))
+	var rawConfig rawConfig
+	if err := yaml.Unmarshal(content, &rawConfig); err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading YAML %s: %v\n", path, err)
 		os.Exit(1)
 	}
 
-	return _baseConfig
-}
-
-func loadProcessConfigs(pathPattern string) []ProcessConfig {
-
-	var processConfigs []ProcessConfig
-	matches, err := filepath.Glob(ReplaceEnvVarsAndTilde(pathPattern))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading path pattern %s: %s\n", pathPattern, err)
-		os.Exit(1)
-	}
-
-	for _, match := range matches {
-		data := loadFileContent(match)
-
-		var processConfig ProcessConfig
-		if err := yaml.Unmarshal(data, &processConfig); err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading YAML %s: %v\n", match, err)
-			os.Exit(1)
-		}
-		processConfigs = append(processConfigs, processConfig)
-
-	}
-
-	return processConfigs
+	return rawConfig
 }
 
 func loadFileContent(path string) []byte {

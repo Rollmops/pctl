@@ -1,0 +1,3 @@
+processes:
+- name: p1
+  cmd: sleep infinity

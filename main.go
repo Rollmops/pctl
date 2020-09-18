@@ -15,7 +15,7 @@ func main() {
 	pctlApp.Run(os.Args)
 	log.Debug("Starting appliction pctl")
 
-	_config := config.LoadConfig()
+	_config, _ := config.LoadConfig("")
 
 	fmt.Println(_config.Processes)
 }

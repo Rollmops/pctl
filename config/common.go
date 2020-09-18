@@ -9,12 +9,12 @@ import (
 
 const _configFileName string = "pctl.yml"
 
-func GetConfigPath() string {
+func getConfigPath() string {
 	cwd, _ := os.Getwd()
 	possibleConfigPaths := []string{
 		os.Getenv("PCTL_CONFIG_PATH"),
 		path.Join(cwd, _configFileName),
-		path.Join(os.Getenv("HOME"), _configFileName),
+		path.Join(os.Getenv("HOME"), ".config", _configFileName),
 		path.Join("/", "etc", "pctl", _configFileName),
 	}
 
@@ -31,6 +31,7 @@ func GetConfigPath() string {
 	return ""
 }
 
+// TODO support adding username after ~
 func ReplaceEnvVarsAndTilde(text string) string {
 	_text := os.ExpandEnv(text)
 
