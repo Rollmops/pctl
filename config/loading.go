@@ -81,7 +81,7 @@ func loadYamlFromPath(path string) (*rawConfig, error) {
 func loadFileContent(path string) ([]byte, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("unable to load file path %s", path)
+		return nil, err
 	}
 	return data, nil
 }
