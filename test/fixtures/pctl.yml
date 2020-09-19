@@ -2,7 +2,7 @@ includes:
   - ${TEST_DATA_DIR}/include.yml
 processes:
   - name: spserver
-    cmd: spserver
+    cmd: [spserver]
     metadata:
       labels:
         group: km

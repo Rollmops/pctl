@@ -8,11 +8,11 @@ func TestValidateConfig(t *testing.T) {
 		Processes: []config.ProcessConfig{
 			{
 				Name: "p1",
-				Cmd:  "sleep 1",
+				Cmd:  []string{"sleep 1"},
 			},
 			{
 				Name: "p1",
-				Cmd:  "sleep 2",
+				Cmd:  []string{"sleep 2"},
 			},
 		},
 	}

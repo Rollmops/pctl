@@ -6,7 +6,7 @@ type Loader interface {
 
 type ProcessConfig struct {
 	Name string
-	Cmd  string
+	Cmd  []string
 }
 
 type Config struct {
