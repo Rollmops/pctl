@@ -1,7 +1,9 @@
 package process
 
 import (
+	"fmt"
 	"github.com/Rollmops/pctl/config"
+	gopsutil "github.com/shirou/gopsutil/process"
 	"os/exec"
 )
 
@@ -19,7 +21,7 @@ func NewProcess(config config.ProcessConfig) Process {
 	}
 }
 
-func (p Process) Start() error {
+func (p *Process) Start() error {
 
 	name := p.config.Cmd[0]
 
@@ -30,5 +32,15 @@ func (p Process) Start() error {
 
 	p.cmd = exec.Command(name, args...)
 	return p.cmd.Start()
+
+}
+
+func (p *Process) Info() (*gopsutil.Process, error) {
+
+	if p.cmd == nil {
+		return nil, fmt.Errorf("command to yet started")
+	}
+
+	return gopsutil.NewProcess(int32(p.cmd.Process.Pid))
 
 }

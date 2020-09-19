@@ -42,3 +42,32 @@ func TestProcessStart(t *testing.T) {
 	}
 
 }
+
+func TestProcessInfo(t *testing.T) {
+
+	p := process.NewProcess(config.ProcessConfig{
+		Name: "test",
+		Cmd: []string{ "sleep", "1" },
+	})
+
+	_, err := p.Info()
+	if err == nil {
+		t.Fatalf("Expect error on non started process")
+	}
+
+	err = p.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	info, err := p.Info()
+	if err != nil {
+		t.Fatalf("Expect error on non started process")
+	}
+
+	cmdline, _ := info.Cmdline()
+	if cmdline != "sleep 1" {
+		t.Fatalf("%s != sleep 1", cmdline)
+	}
+
+}
