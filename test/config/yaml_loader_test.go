@@ -13,7 +13,7 @@ var testDataDir string
 
 func setUp() {
 	cwd, _ := os.Getwd()
-	testDataDir = path.Join(cwd, "..", "..", "test_data")
+	testDataDir = path.Join(cwd, "..", "fixtures")
 	_ = os.Setenv("TEST_DATA_DIR", testDataDir)
 }
 
