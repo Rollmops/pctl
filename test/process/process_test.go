@@ -18,7 +18,7 @@ func TestProcessStart(t *testing.T) {
 
 	p := process.NewProcess(config.ProcessConfig{
 		Name: "test",
-		Cmd: []string{ "rm", tmpFile.Name() },
+		Cmd:  []string{"rm", tmpFile.Name()},
 	})
 
 	err = p.Start()
@@ -47,7 +47,7 @@ func TestProcessInfo(t *testing.T) {
 
 	p := process.NewProcess(config.ProcessConfig{
 		Name: "test",
-		Cmd: []string{ "sleep", "1" },
+		Cmd:  []string{"sleep", "1"},
 	})
 
 	_, err := p.Info()

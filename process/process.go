@@ -8,16 +8,14 @@ import (
 )
 
 type Process struct {
-
 	config config.ProcessConfig
-	cmd *exec.Cmd
-
+	cmd    *exec.Cmd
 }
 
 func NewProcess(config config.ProcessConfig) Process {
 	return Process{
 		config: config,
-		cmd: nil,
+		cmd:    nil,
 	}
 }
 
