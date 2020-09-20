@@ -11,5 +11,4 @@ func main() {
 	pctlApp := app.CreateCliApp()
 	_ = pctlApp.Run(os.Args)
 	log.Debug("Starting application pctl")
-
 }
