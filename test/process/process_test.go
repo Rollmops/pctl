@@ -2,6 +2,7 @@ package process_test
 
 import (
 	"fmt"
+	"github.com/Rollmops/pctl/common"
 	"github.com/Rollmops/pctl/config"
 	"github.com/Rollmops/pctl/process"
 	"io/ioutil"
@@ -12,7 +13,6 @@ import (
 )
 
 func TestProcessStart(t *testing.T) {
-
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "pctl_test.*.txt")
 	if err != nil {
 		t.Fatal(err)
@@ -28,21 +28,14 @@ func TestProcessStart(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	attempts := 0
-	for {
-		attempts += 1
-
-		_, err = os.Stat(tmpFile.Name())
-		if err != nil {
-			break
+	if err = common.WaitUntilTrue(func() bool {
+		if _, err = os.Stat(tmpFile.Name()); err != nil {
+			return true
 		}
-		if attempts > 10 {
-			t.Fatalf("Expect file %s to be removed after 1s.", tmpFile.Name())
-		}
-
-		time.Sleep(100 * time.Millisecond)
+		return false
+	}, 100*time.Millisecond, 10); err != nil {
+		t.Fatalf("Expect file %s to be removed after 1s.", tmpFile.Name())
 	}
-
 }
 
 func TestProcessInfo(t *testing.T) {
