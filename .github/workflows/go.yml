@@ -36,11 +36,11 @@ jobs:
       run: go build -v .
 
     - name: Test
+      run: go test -v -covermode=count -coverprofile=coverage.out ./...
+    - name: Coveralls
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-      run: |
-        go test -v -covermode=count -coverprofile=coverage.out ./...
-        goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_REPO_TOKEN
+      run: goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_REPO_TOKEN
 
 
 
