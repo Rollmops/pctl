@@ -11,6 +11,9 @@ func (c *Config) Validate() error {
 		if _isInList(processNames, p.Name) {
 			return fmt.Errorf("found duplicate process name %s", p.Name)
 		}
+		if len(p.Cmd) == 0 {
+			return fmt.Errorf("expect length of process cmd at least to be 1 (process %s)", p.Name)
+		}
 		processNames = append(processNames, p.Name)
 	}
 	return nil
