@@ -2,7 +2,7 @@ name: Go
 
 on:
   push:
-    branches: [ master ]
+    branches: [ /^.+$/ ]
   pull_request:
     branches: [ master ]
 
@@ -38,7 +38,7 @@ jobs:
     - name: Test
       run: |
         go test -v -covermode=count -coverprofile=coverage.out ./...
-        $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+        $GOPATH/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
 
 
 
