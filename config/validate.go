@@ -4,11 +4,11 @@ import (
 	"fmt"
 )
 
-func (c Config) Validate() error {
+func (c *Config) Validate() error {
 	var processNames []string
 
 	for _, p := range c.Processes {
-		if isInList(processNames, p.Name) {
+		if _isInList(processNames, p.Name) {
 			return fmt.Errorf("found duplicate process name %s", p.Name)
 		}
 		processNames = append(processNames, p.Name)
@@ -16,7 +16,7 @@ func (c Config) Validate() error {
 	return nil
 }
 
-func isInList(list []string, elem string) bool {
+func _isInList(list []string, elem string) bool {
 	for _, e := range list {
 		if e == elem {
 			return true

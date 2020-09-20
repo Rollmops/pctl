@@ -20,6 +20,8 @@ func (c CsvWriter) Write(data []Data) error {
 		return err
 	}
 
+	defer func() { _ = file.Close() }()
+
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 

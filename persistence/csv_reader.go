@@ -20,6 +20,8 @@ func (c CsvReader) Read() ([]Data, error) {
 		return nil, err
 	}
 
+	defer func() { _ = file.Close() }()
+
 	reader := csv.NewReader(file)
 	records, err := reader.ReadAll()
 	if err != nil {
