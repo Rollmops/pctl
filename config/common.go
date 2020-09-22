@@ -1,13 +1,17 @@
 package config
 
-import (
-	"fmt"
-	"os"
-	"path"
-)
-
 const _configFileName string = "pctl.yml"
 
+func (c *Config) FindByName(name string) *ProcessConfig {
+	for _, p := range c.Processes {
+		if p.Name == name {
+			return &p
+		}
+	}
+	return nil
+}
+
+/*
 func getConfigPath() string {
 	cwd, _ := os.Getwd()
 	possibleConfigPaths := []string{
@@ -29,3 +33,4 @@ func getConfigPath() string {
 
 	return ""
 }
+*/
