@@ -9,6 +9,7 @@ import (
 
 type Process struct {
 	Config config.ProcessConfig
+	info   *gopsutil.Process
 	cmd    *exec.Cmd
 }
 
@@ -17,6 +18,15 @@ func NewProcess(config config.ProcessConfig) Process {
 		Config: config,
 		cmd:    nil,
 	}
+}
+
+func (p *Process) IsRunning() bool {
+	info, err := p.Info()
+	if err != nil {
+		return false
+	}
+	isRunning, err := info.IsRunning()
+	return isRunning && err == nil
 }
 
 func (p *Process) Start() error {
@@ -34,11 +44,13 @@ func (p *Process) Start() error {
 }
 
 func (p *Process) Info() (*gopsutil.Process, error) {
-
 	if p.cmd == nil {
 		return nil, fmt.Errorf("command to yet started")
 	}
-
-	return gopsutil.NewProcess(int32(p.cmd.Process.Pid))
-
+	if p.info != nil {
+		return p.info, nil
+	}
+	info, err := gopsutil.NewProcess(int32(p.cmd.Process.Pid))
+	p.info = info
+	return info, err
 }

@@ -38,6 +38,30 @@ func TestProcessStart(t *testing.T) {
 	}
 }
 
+func TestProcessIsRunning(t *testing.T) {
+	p := process.NewProcess(config.ProcessConfig{
+		Name: "test",
+		Cmd:  []string{"sleep", "1"},
+	})
+
+	if p.IsRunning() {
+		t.Fatal("Expect process to be not running")
+	}
+
+	err := p.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = common.WaitUntilTrue(func() bool {
+		return p.IsRunning()
+	}, 100*time.Millisecond, 10); err != nil {
+		t.Fatal("Expect process to be running")
+	}
+
+	// unfortunately the process hangs in a defunct state after sleep 1 exited (also with releasing it)
+}
+
 func TestProcessInfo(t *testing.T) {
 
 	var cmdline string
