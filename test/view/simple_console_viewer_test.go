@@ -32,8 +32,8 @@ func TestSimpleConsoleViewer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedOutput := `p1: [sleep 10]
-p2: [ls -la]
+	expectedOutput := `p1: [sleep 10], running: no
+p2: [ls -la], running: no
 `
 
 	if w.String() != expectedOutput {

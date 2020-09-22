@@ -16,7 +16,11 @@ func NewSimpleConsoleViewer(file io.Writer) SimpleConsoleViewer {
 
 func (v *SimpleConsoleViewer) View(processes []process.Process) error {
 	for _, p := range processes {
-		line := fmt.Sprintf("%s: %s\n", p.Config.Name, p.Config.Cmd)
+		isRunning := "no"
+		if p.IsRunning() {
+			isRunning = "yes"
+		}
+		line := fmt.Sprintf("%s: %s, running: %s\n", p.Config.Name, p.Config.Cmd, isRunning)
 		if _, err := v.writer.Write([]byte(line)); err != nil {
 			return err
 		}
