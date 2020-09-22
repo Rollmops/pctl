@@ -27,12 +27,21 @@ func CreateCliApp() *cli.App {
 					return nil
 				},
 			},
+			{
+				Name:      "start",
+				Usage:     "start a process",
+				ArgsUsage: "a list of process names",
+				Action: func(c *cli.Context) error {
+					fmt.Println("Starting process", c.Args())
+					return nil
+				},
+			},
 		},
-		Action: func(c *cli.Context) error {
+		Before: func(c *cli.Context) error {
 			logLevelString := c.String("loglevel")
 			level, err := log.ParseLevel(logLevelString)
 			if err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "Unable to parse loglevel %s\n", logLevelString)
+				_, _ = fmt.Fprintf(os.Stderr, "Unable to parse loglevel '%s'\n", logLevelString)
 				os.Exit(1)
 			}
 			log.SetLevel(level)
