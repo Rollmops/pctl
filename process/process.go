@@ -8,24 +8,24 @@ import (
 )
 
 type Process struct {
-	config config.ProcessConfig
+	Config config.ProcessConfig
 	cmd    *exec.Cmd
 }
 
 func NewProcess(config config.ProcessConfig) Process {
 	return Process{
-		config: config,
+		Config: config,
 		cmd:    nil,
 	}
 }
 
 func (p *Process) Start() error {
 
-	name := p.config.Cmd[0]
+	name := p.Config.Cmd[0]
 
 	var args []string
-	if len(p.config.Cmd) > 1 {
-		args = p.config.Cmd[1:]
+	if len(p.Config.Cmd) > 1 {
+		args = p.Config.Cmd[1:]
 	}
 
 	p.cmd = exec.Command(name, args...)
