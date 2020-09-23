@@ -18,3 +18,5 @@ pctl
 
 .vscode/
 .idea/
+
+__pycache__/

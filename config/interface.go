@@ -5,8 +5,9 @@ type Loader interface {
 }
 
 type ProcessConfig struct {
-	Name string
-	Cmd  []string
+	Name                    string
+	Cmd                     []string
+	PidRetrieveStrategyName string
 }
 
 type Config struct {

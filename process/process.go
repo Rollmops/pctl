@@ -2,9 +2,10 @@ package process
 
 import (
 	"fmt"
+	"os/exec"
+
 	"github.com/Rollmops/pctl/config"
 	gopsutil "github.com/shirou/gopsutil/process"
-	"os/exec"
 )
 
 type Process struct {
@@ -29,6 +30,11 @@ func (p *Process) IsRunning() bool {
 	return isRunning && err == nil
 }
 
+func (p *Process) Pid() (int32, error) {
+	strategy := PidRetrieveStrategies[p.Config.PidRetrieveStrategyName]
+	return strategy.Retrieve(p)
+}
+
 func (p *Process) Start() error {
 
 	name := p.Config.Cmd[0]
@@ -50,7 +56,11 @@ func (p *Process) Info() (*gopsutil.Process, error) {
 	if p.info != nil {
 		return p.info, nil
 	}
-	info, err := gopsutil.NewProcess(int32(p.cmd.Process.Pid))
+	pid, err := p.Pid()
+	if err != nil {
+		return nil, err
+	}
+	info, err := gopsutil.NewProcess(pid)
 	p.info = info
 	return info, err
 }
