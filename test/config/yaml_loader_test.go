@@ -11,14 +11,13 @@ import (
 
 var testDataDir string
 
-func setUp() {
+func init() {
 	cwd, _ := os.Getwd()
 	testDataDir = path.Join(cwd, "..", "fixtures")
 	_ = os.Setenv("TEST_DATA_DIR", testDataDir)
 }
 
 func TestLoadConfigOk(t *testing.T) {
-	setUp()
 	testConfigPath := path.Join(testDataDir, "pctl.yml")
 	yamlLoader, _ := config.NewYamlLoader(testConfigPath)
 
@@ -30,7 +29,6 @@ func TestLoadConfigOk(t *testing.T) {
 }
 
 func TestCircleInclude(t *testing.T) {
-	setUp()
 	testConfigPath := path.Join(testDataDir, "pctl_circle_include.yml")
 	yamlLoader, _ := config.NewYamlLoader(testConfigPath)
 
@@ -42,7 +40,6 @@ func TestCircleInclude(t *testing.T) {
 }
 
 func TestLoadConfigGlobIncludes(t *testing.T) {
-	setUp()
 	testConfigPath := path.Join(testDataDir, "glob_test.yml")
 	yamlLoader, _ := config.NewYamlLoader(testConfigPath)
 
