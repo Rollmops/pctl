@@ -32,8 +32,10 @@ func CreateCliApp() *cli.App {
 				Usage:     "start a process",
 				ArgsUsage: "a list of process names",
 				Action: func(c *cli.Context) error {
-					fmt.Println("Starting process", c.Args())
-					return nil
+					if c.NArg() == 0 {
+						return fmt.Errorf("missing arguments")
+					}
+					return StartCommand(c.Args().Slice())
 				},
 			},
 		},
@@ -45,7 +47,12 @@ func CreateCliApp() *cli.App {
 				os.Exit(1)
 			}
 			log.SetLevel(level)
-			return nil
+
+			CurrentContext, err = NewContext()
+			if err != nil {
+				return err
+			}
+			return CurrentContext.Initialize()
 		},
 	}
 }

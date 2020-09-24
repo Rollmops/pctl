@@ -3,19 +3,29 @@ package persistence
 import (
 	"encoding/csv"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
 type CsvReader struct {
-	path string
+	stateFilePath string
 }
 
-func NewCsvReader(path string) CsvReader {
-	return CsvReader{path: path}
+func NewCsvWriter() (*CsvWriter, error) {
+	stateFilePath, err := GetStateFilePath()
+	if err != nil {
+		return nil, err
+	}
+	stateFilePath = filepath.Join(stateFilePath, "state.csv")
+	return &CsvWriter{stateFilePath: stateFilePath}, nil
 }
 
-func (c CsvReader) Read() ([]Data, error) {
-	file, err := os.OpenFile(c.path, os.O_RDONLY, 0755)
+func NewTestCsvWriter(stateFilePath string) CsvWriter {
+	return CsvWriter{stateFilePath: stateFilePath}
+}
+
+func (c *CsvReader) Read() ([]Data, error) {
+	file, err := os.OpenFile(c.stateFilePath, os.O_RDONLY|os.O_CREATE, 0755)
 	if err != nil {
 		return nil, err
 	}
@@ -30,11 +40,11 @@ func (c CsvReader) Read() ([]Data, error) {
 
 	var data []Data
 	for _, record := range records {
-		pidStr, err := strconv.Atoi(record[1])
+		pid, err := strconv.Atoi(record[1])
 		if err != nil {
 			return nil, err
 		}
-		data = append(data, Data{Name: record[0], Pid: pidStr, Cmd: record[2]})
+		data = append(data, Data{Name: record[0], Pid: int32(pid), Cmd: record[2]})
 	}
 
 	return data, nil

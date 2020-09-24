@@ -19,9 +19,9 @@ func init() {
 
 func TestLoadConfigOk(t *testing.T) {
 	testConfigPath := path.Join(testDataDir, "pctl.yml")
-	yamlLoader, _ := config.NewYamlLoader(testConfigPath)
+	yamlLoader := config.NewYamlLoader()
 
-	_config, _ := yamlLoader.Load()
+	_config, _ := yamlLoader.Load(testConfigPath)
 
 	if processCount := len(_config.Processes); processCount != 2 {
 		t.Fatalf("Expected process count of 2, got %d", processCount)
@@ -30,9 +30,9 @@ func TestLoadConfigOk(t *testing.T) {
 
 func TestCircleInclude(t *testing.T) {
 	testConfigPath := path.Join(testDataDir, "pctl_circle_include.yml")
-	yamlLoader, _ := config.NewYamlLoader(testConfigPath)
+	yamlLoader := config.NewYamlLoader()
 
-	_, err := yamlLoader.Load()
+	_, err := yamlLoader.Load(testConfigPath)
 
 	if err == nil {
 		t.Fatalf("Expected error but got nil")
@@ -41,9 +41,9 @@ func TestCircleInclude(t *testing.T) {
 
 func TestLoadConfigGlobIncludes(t *testing.T) {
 	testConfigPath := path.Join(testDataDir, "glob_test.yml")
-	yamlLoader, _ := config.NewYamlLoader(testConfigPath)
+	yamlLoader := config.NewYamlLoader()
 
-	_config, _ := yamlLoader.Load()
+	_config, _ := yamlLoader.Load(testConfigPath)
 
 	if processCount := len(_config.Processes); processCount != 3 {
 		t.Fatalf("Expected process count of 3, got %d", processCount)

@@ -1,7 +1,7 @@
 package persistence
 
 type Data struct {
-	Pid  int
+	Pid  int32
 	Name string
 	Cmd  string
 }

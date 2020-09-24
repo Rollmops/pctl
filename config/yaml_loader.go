@@ -11,15 +11,6 @@ import (
 )
 
 type YamlLoader struct {
-	path string
-}
-
-func NewYamlLoader(path string) (*YamlLoader, error) {
-	path, err := filepath.Abs(os.ExpandEnv(path))
-	if err != nil {
-		return nil, err
-	}
-	return &YamlLoader{path: path}, nil
 }
 
 type _rawConfig struct {
@@ -27,8 +18,16 @@ type _rawConfig struct {
 	Processes []ProcessConfig
 }
 
-func (l YamlLoader) Load() (*Config, error) {
-	rawConfig, err := loadYamlFromPath(l.path)
+func NewYamlLoader() *YamlLoader {
+	return &YamlLoader{}
+}
+
+func (l *YamlLoader) Load(path string) (*Config, error) {
+	path, err := filepath.Abs(os.ExpandEnv(path))
+	if err != nil {
+		return nil, err
+	}
+	rawConfig, err := loadYamlFromPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +36,7 @@ func (l YamlLoader) Load() (*Config, error) {
 		Processes: rawConfig.Processes,
 	}
 
-	err = loadIncludes(l.path, rawConfig.Includes, &config)
+	err = loadIncludes(path, rawConfig.Includes, &config)
 	if err != nil {
 		return nil, err
 	}

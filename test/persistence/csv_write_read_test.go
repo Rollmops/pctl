@@ -13,7 +13,7 @@ func TestWriteReadCsv(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmpFile.Name())
-	csvWriter := persistence.NewCsvWriter(tmpFile.Name())
+	csvWriter := persistence.NewTestCsvWriter(tmpFile.Name())
 
 	data := []persistence.Data{
 		{
@@ -33,7 +33,7 @@ func TestWriteReadCsv(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	csvReader := persistence.NewCsvReader(tmpFile.Name())
+	csvReader := persistence.NewTestCsvReader(tmpFile.Name())
 
 	readData, err := csvReader.Read()
 	if err != nil {

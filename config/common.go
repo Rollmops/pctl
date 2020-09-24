@@ -1,6 +1,18 @@
 package config
 
+import (
+	"fmt"
+	"os"
+	"path"
+	"strings"
+)
+
 const _configFileName string = "pctl.yml"
+
+var SuffixConfigLoaderMap = map[string]Loader{
+	"yaml": &YamlLoader{},
+	"yml":  &YamlLoader{},
+}
 
 func (c *Config) FindByName(name string) *ProcessConfig {
 	for _, p := range c.Processes {
@@ -11,8 +23,7 @@ func (c *Config) FindByName(name string) *ProcessConfig {
 	return nil
 }
 
-/*
-func getConfigPath() string {
+func GetConfigPath() (string, error) {
 	cwd, _ := os.Getwd()
 	possibleConfigPaths := []string{
 		os.Getenv("PCTL_CONFIG_PATH"),
@@ -24,13 +35,15 @@ func getConfigPath() string {
 	for _, configPath := range possibleConfigPaths {
 		_, err := os.Stat(configPath)
 		if err == nil {
-			return configPath
+			return configPath, nil
 		}
 	}
 
-	_, _ = fmt.Fprintf(os.Stderr, "Unable to to find valid config path: %v\n", possibleConfigPaths)
-	os.Exit(1)
-
-	return ""
+	return "", fmt.Errorf("Unable to to find valid config path: %v\n", possibleConfigPaths)
 }
-*/
+
+func GetLoaderFromPath(path string) Loader {
+	fractions := strings.Split(path, ".")
+	suffix := fractions[len(fractions)-1]
+	return SuffixConfigLoaderMap[suffix]
+}

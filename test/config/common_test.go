@@ -30,3 +30,17 @@ func TestFindByName(t *testing.T) {
 	}
 
 }
+
+func TestGetLoaderFromPathYaml(t *testing.T) {
+	loader := config.GetLoaderFromPath("/path/to/config.yaml")
+	if _, ok := loader.(*config.YamlLoader); !ok {
+		t.Fatal("expected YamlLoader")
+	}
+}
+
+func TestGetLoaderFromPathYml(t *testing.T) {
+	loader := config.GetLoaderFromPath("/path/to/config.yml")
+	if _, ok := loader.(*config.YamlLoader); !ok {
+		t.Fatal("expected YamlLoader")
+	}
+}
