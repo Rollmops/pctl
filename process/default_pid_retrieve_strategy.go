@@ -2,8 +2,7 @@ package process
 
 import "fmt"
 
-type DefaultPidRetrieveStrategy struct {
-}
+type DefaultPidRetrieveStrategy struct{}
 
 func (s *DefaultPidRetrieveStrategy) Retrieve(p *Process) (int32, error) {
 	if p.cmd == nil || p.cmd.Process == nil {

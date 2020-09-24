@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestAddOrUpdateEntry(t *testing.T) {
+func TestDataHandling(t *testing.T) {
 
 	data := persistence.Data{
 		Entries: []persistence.DataEntry{
@@ -46,4 +46,11 @@ func TestAddOrUpdateEntry(t *testing.T) {
 		t.Fatal("pid was not updated")
 	}
 
+	data.RemoveByName("p1")
+	if len(data.Entries) != 1 {
+		t.Fatalf("1 != %d", len(data.Entries))
+	}
+	if data.Entries[0].Name != "p2" {
+		t.Fatalf("p2 != %s", data.Entries[0].Name)
+	}
 }

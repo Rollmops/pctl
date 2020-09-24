@@ -37,3 +37,20 @@ func (d *Data) AddOrUpdateEntry(entry *DataEntry) {
 	}
 	d.Entries = append(d.Entries, *entry)
 }
+
+func (d *Data) RemoveByName(name string) {
+	index := d._findIndex(name)
+	if index != -1 {
+		d.Entries[index] = d.Entries[len(d.Entries)-1]
+		d.Entries = d.Entries[:len(d.Entries)-1]
+	}
+}
+
+func (d *Data) _findIndex(name string) int {
+	for index, entry := range d.Entries {
+		if entry.Name == name {
+			return index
+		}
+	}
+	return -1
+}

@@ -29,13 +29,24 @@ func CreateCliApp() *cli.App {
 			},
 			{
 				Name:      "start",
-				Usage:     "start a process",
+				Usage:     "start a process(es)",
 				ArgsUsage: "a list of process names",
 				Action: func(c *cli.Context) error {
 					if c.NArg() == 0 {
-						return fmt.Errorf("missing arguments")
+						return fmt.Errorf("missing process names")
 					}
 					return StartCommand(c.Args().Slice())
+				},
+			},
+			{
+				Name:      "stop",
+				Usage:     "stop a process(es)",
+				ArgsUsage: "a list of process names",
+				Action: func(c *cli.Context) error {
+					if c.NArg() == 0 {
+						return fmt.Errorf("missing process names")
+					}
+					return StopCommand(c.Args().Slice())
 				},
 			},
 		},

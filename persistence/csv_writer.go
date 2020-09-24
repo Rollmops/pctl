@@ -27,12 +27,17 @@ func NewTestCsvReader(stateFilePath string) CsvReader {
 
 func (c *CsvWriter) Write(data *Data) error {
 	log.Debugf("Opening %s", c.stateFilePath)
-	file, err := os.OpenFile(c.stateFilePath, os.O_RDWR, 0755)
+	file, err := os.OpenFile(c.stateFilePath, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return err
 	}
 
 	defer func() { _ = file.Close() }()
+
+	err = file.Truncate(0)
+	if err != nil {
+		return err
+	}
 
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
