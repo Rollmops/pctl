@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"encoding/csv"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,7 +25,8 @@ func NewTestCsvWriter(stateFilePath string) CsvWriter {
 	return CsvWriter{stateFilePath: stateFilePath}
 }
 
-func (c *CsvReader) Read() ([]Data, error) {
+func (c *CsvReader) Read() (*Data, error) {
+	log.Debugf("Opening %s", c.stateFilePath)
 	file, err := os.OpenFile(c.stateFilePath, os.O_RDONLY|os.O_CREATE, 0755)
 	if err != nil {
 		return nil, err
@@ -38,15 +40,15 @@ func (c *CsvReader) Read() ([]Data, error) {
 		return nil, err
 	}
 
-	var data []Data
+	var data []DataEntry
+	log.Debugf("Reading %d records from state file", len(records))
 	for _, record := range records {
 		pid, err := strconv.Atoi(record[1])
 		if err != nil {
 			return nil, err
 		}
-		data = append(data, Data{Name: record[0], Pid: int32(pid), Cmd: record[2]})
+		data = append(data, DataEntry{Name: record[0], Pid: int32(pid), Cmd: record[2]})
 	}
 
-	return data, nil
-
+	return &Data{Entries: data}, nil
 }

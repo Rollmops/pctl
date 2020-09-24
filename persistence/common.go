@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"fmt"
+	"github.com/Rollmops/pctl/process"
 	"os"
 	"path/filepath"
 )
@@ -20,4 +21,24 @@ func GetStateFilePath() (string, error) {
 		}
 	}
 	return stateFilePath, nil
+}
+
+func NewDataEntryFromProcess(p *process.Process) (*DataEntry, error) {
+	pid, err := p.Pid()
+	if err != nil {
+		return nil, err
+	}
+	info, err := p.Info()
+	if err != nil {
+		return nil, err
+	}
+	cmdline, err := info.Cmdline()
+	if err != nil {
+		return nil, err
+	}
+	return &DataEntry{
+		Pid:  pid,
+		Name: p.Config.Name,
+		Cmd:  cmdline,
+	}, nil
 }

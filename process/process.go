@@ -14,8 +14,8 @@ type Process struct {
 	cmd    *exec.Cmd
 }
 
-func NewProcess(config config.ProcessConfig) Process {
-	return Process{
+func NewProcess(config config.ProcessConfig) *Process {
+	return &Process{
 		Config: config,
 		cmd:    nil,
 	}

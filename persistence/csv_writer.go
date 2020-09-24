@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"encoding/csv"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,7 +25,8 @@ func NewTestCsvReader(stateFilePath string) CsvReader {
 	return CsvReader{stateFilePath: stateFilePath}
 }
 
-func (c *CsvWriter) Write(data []Data) error {
+func (c *CsvWriter) Write(data *Data) error {
+	log.Debugf("Opening %s", c.stateFilePath)
 	file, err := os.OpenFile(c.stateFilePath, os.O_RDWR, 0755)
 	if err != nil {
 		return err
@@ -35,7 +37,8 @@ func (c *CsvWriter) Write(data []Data) error {
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	for _, d := range data {
+	log.Debugf("Writing %d entries to %s", len(data.Entries), c.stateFilePath)
+	for _, d := range data.Entries {
 		err := writer.Write([]string{d.Name, strconv.Itoa(int(d.Pid)), d.Cmd})
 		if err != nil {
 			return err

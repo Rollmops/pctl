@@ -15,16 +15,18 @@ func TestWriteReadCsv(t *testing.T) {
 	defer os.Remove(tmpFile.Name())
 	csvWriter := persistence.NewTestCsvWriter(tmpFile.Name())
 
-	data := []persistence.Data{
-		{
-			Pid:  1,
-			Name: "process1",
-			Cmd:  "sleep infinity",
-		},
-		{
-			Pid:  2,
-			Name: "process2",
-			Cmd:  "cat",
+	data := &persistence.Data{
+		Entries: []persistence.DataEntry{
+			{
+				Pid:  1,
+				Name: "process1",
+				Cmd:  "sleep infinity",
+			},
+			{
+				Pid:  2,
+				Name: "process2",
+				Cmd:  "cat",
+			},
 		},
 	}
 
@@ -40,9 +42,9 @@ func TestWriteReadCsv(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for index := range data {
-		if data[index] != readData[index] {
-			t.Fatalf("%v != %v", data[index], readData[index])
+	for index := range data.Entries {
+		if data.Entries[index] != readData.Entries[index] {
+			t.Fatalf("%v != %v", data.Entries[index], readData.Entries[index])
 		}
 	}
 
