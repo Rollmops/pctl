@@ -14,7 +14,7 @@ func NewSimpleConsoleViewer(file io.Writer) SimpleConsoleViewer {
 	return SimpleConsoleViewer{writer: file}
 }
 
-func (v *SimpleConsoleViewer) View(processes []process.Process) error {
+func (v *SimpleConsoleViewer) View(processes []*process.Process) error {
 	for _, p := range processes {
 		isRunning := "no"
 		if p.IsRunning() {

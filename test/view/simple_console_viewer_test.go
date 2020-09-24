@@ -9,7 +9,7 @@ import (
 )
 
 func TestSimpleConsoleViewer(t *testing.T) {
-	processes := []process.Process{
+	processes := []*process.Process{
 		process.NewProcess(
 			config.ProcessConfig{
 				Name: "p1",

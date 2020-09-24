@@ -45,7 +45,7 @@ func TestDefaultPidRetrieveStrategy(t *testing.T) {
 	}, 100*time.Millisecond, 100); err != nil {
 		t.Fatal(err)
 	}
-	pid, err := s.Retrieve(&p)
+	pid, err := s.Retrieve(p)
 	if err != nil {
 		t.Fatal(err)
 	}
