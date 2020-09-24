@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/Rollmops/pctl/config"
 	"github.com/Rollmops/pctl/persistence"
 	"github.com/Rollmops/pctl/process"
 	gopsutil "github.com/shirou/gopsutil/process"
@@ -21,10 +22,14 @@ func StartCommand(names []string) error {
 		return nil
 	}
 	for _, name := range names {
-		dataEntry := data.FindByName(name)
+		processConfig := CurrentContext.config.FindByName(name)
+		if processConfig == nil {
+			return fmt.Errorf("unable to find process '%s' in config", name)
+		}
+		dataEntry := data.FindByName(processConfig.Name)
 		if dataEntry == nil {
 			// TODO warn if we find a process with the same cmdline
-			_process, err := _startProcessByName(name)
+			_process, err := _startProcess(processConfig)
 			if err != nil {
 				return err
 			}
@@ -39,7 +44,7 @@ func StartCommand(names []string) error {
 			}
 			if !pidExists {
 				log.Warnf("Expected '%s' as running ... starting it", name)
-				_process, err := _startProcessByName(name)
+				_process, err := _startProcess(processConfig)
 				if err != nil {
 					return err
 				}
@@ -55,13 +60,9 @@ func StartCommand(names []string) error {
 	return CurrentContext.persistenceWriter.Write(data)
 }
 
-func _startProcessByName(name string) (*process.Process, error) {
-	_config := CurrentContext.config.FindByName(name)
-	if _config == nil {
-		return nil, fmt.Errorf("unable to find process '%s'", name)
-	}
-	log.Infof("Starting process '%s'", name)
-	_process := process.NewProcess(*_config)
+func _startProcess(processConfig *config.ProcessConfig) (*process.Process, error) {
+	log.Infof("Starting process '%s'", processConfig.Name)
+	_process := process.NewProcess(processConfig)
 	err := _process.Start()
 	if err != nil {
 		return nil, err

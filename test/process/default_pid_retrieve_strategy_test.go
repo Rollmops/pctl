@@ -27,7 +27,7 @@ func TestDefaultPidRetrieveStrategy(t *testing.T) {
 	testScriptPath := filepath.Join(_testDataDir, "write_pid.sh")
 
 	s := process.DefaultPidRetrieveStrategy{}
-	c := config.ProcessConfig{
+	c := &config.ProcessConfig{
 		Name: "PidTest",
 		Cmd:  []string{"bash", testScriptPath, tmpPidFilePath},
 	}

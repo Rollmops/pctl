@@ -9,12 +9,12 @@ import (
 )
 
 type Process struct {
-	Config config.ProcessConfig
+	Config *config.ProcessConfig
 	info   *gopsutil.Process
 	cmd    *exec.Cmd
 }
 
-func NewProcess(config config.ProcessConfig) *Process {
+func NewProcess(config *config.ProcessConfig) *Process {
 	return &Process{
 		Config: config,
 		cmd:    nil,

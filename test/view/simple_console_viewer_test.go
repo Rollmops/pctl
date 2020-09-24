@@ -11,12 +11,12 @@ import (
 func TestSimpleConsoleViewer(t *testing.T) {
 	processes := []*process.Process{
 		process.NewProcess(
-			config.ProcessConfig{
+			&config.ProcessConfig{
 				Name: "p1",
 				Cmd:  []string{"sleep", "10"},
 			}),
 		process.NewProcess(
-			config.ProcessConfig{
+			&config.ProcessConfig{
 				Name: "p2",
 				Cmd:  []string{"ls", "-la"},
 			}),
