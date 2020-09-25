@@ -7,6 +7,7 @@ import (
 	"github.com/shirou/gopsutil/process"
 	"io"
 	"os"
+	"time"
 )
 
 func init() {
@@ -29,16 +30,18 @@ type JsonConsoleOutput struct {
 }
 
 type RunningInfo struct {
-	Pid         int32                   `json:"pid"`
-	Cwd         string                  `json:"cwd"`
-	IsRunning   bool                    `json:"isRunning"`
-	CPUPercent  float64                 `json:"cpuPercent"`
-	Connections []net.ConnectionStat    `json:"connections"`
-	Command     []string                `json:"command"`
-	MemoryInfo  *process.MemoryInfoStat `json:"memoryInfo"`
-	Exe         string                  `json:"exe"`
-	Username    string                  `json:"username"`
-	Terminal    string                  `json:"terminal"`
+	Pid              int32                   `json:"pid"`
+	Cwd              string                  `json:"cwd"`
+	IsRunning        bool                    `json:"isRunning"`
+	CPUPercent       float64                 `json:"cpuPercent"`
+	Connections      []net.ConnectionStat    `json:"connections"`
+	Command          []string                `json:"command"`
+	MemoryInfo       *process.MemoryInfoStat `json:"memoryInfo"`
+	Exe              string                  `json:"exe"`
+	Username         string                  `json:"username"`
+	Terminal         string                  `json:"terminal"`
+	CreateTime       int64                   `json:"createTime"`
+	CreateTimeString string                  `json:"createTimeString"`
 }
 
 type JsonInfoEntry struct {
@@ -122,7 +125,6 @@ func getRunningInfo(infoEntry *InfoEntry) (*RunningInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	memoryInfo, err := infoEntry.RunningInfo.MemoryInfo()
 	if err != nil {
 		return nil, err
@@ -131,24 +133,33 @@ func getRunningInfo(infoEntry *InfoEntry) (*RunningInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	createTime, err := infoEntry.RunningInfo.CreateTime()
+	if err != nil {
+		return nil, err
+	}
 	username, err := infoEntry.RunningInfo.Username()
 	if err != nil {
 		return nil, err
 	}
 	terminal, err := infoEntry.RunningInfo.Terminal()
+	if err != nil {
+		return nil, err
+	}
+	createTimeString := time.Unix(createTime/1000, 0)
 	if infoEntry.IsRunning {
 		runningInfo = &RunningInfo{
-			Pid:         infoEntry.RunningInfo.Pid,
-			Cwd:         cwd,
-			IsRunning:   isRunning,
-			CPUPercent:  cpuPercent,
-			Connections: connections,
-			Command:     command,
-			MemoryInfo:  memoryInfo,
-			Exe:         exe,
-			Username:    username,
-			Terminal:    terminal,
+			Pid:              infoEntry.RunningInfo.Pid,
+			Cwd:              cwd,
+			IsRunning:        isRunning,
+			CPUPercent:       cpuPercent,
+			Connections:      connections,
+			Command:          command,
+			MemoryInfo:       memoryInfo,
+			Exe:              exe,
+			Username:         username,
+			Terminal:         terminal,
+			CreateTime:       createTime,
+			CreateTimeString: createTimeString.String(),
 		}
 	}
 	return runningInfo, nil
