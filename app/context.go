@@ -4,6 +4,7 @@ import (
 	"github.com/Rollmops/pctl/config"
 	"github.com/Rollmops/pctl/output"
 	"github.com/Rollmops/pctl/persistence"
+	log "github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -37,8 +38,10 @@ func (c *Context) Initialize() error {
 	if err != nil {
 		return err
 	}
+	log.Debugf("Using config path: %s", configPath)
 	configLoader := config.GetLoaderFromPath(configPath)
 	c.config, err = configLoader.Load(configPath)
+	log.Debugf("Loaded %d process configuration(s)", len(c.config.Processes))
 	if err != nil {
 		return err
 	}

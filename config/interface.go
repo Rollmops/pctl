@@ -7,7 +7,7 @@ type Loader interface {
 type ProcessConfig struct {
 	Name                    string
 	Command                 []string `yaml:"cmd"`
-	PidRetrieveStrategyName string
+	PidRetrieveStrategyName string   `yaml:"pidStrategy"`
 }
 
 type Config struct {

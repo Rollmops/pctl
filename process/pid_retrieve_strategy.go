@@ -15,7 +15,4 @@ type PidRetrieveStrategy interface {
 	Retrieve(*Process) (int32, error)
 }
 
-var PidRetrieveStrategies = map[string]PidRetrieveStrategy{
-	"":        &DefaultPidRetrieveStrategy{},
-	"cmdline": &CommandlinePidRetrieveStrategy{},
-}
+var PidRetrieveStrategies = map[string]PidRetrieveStrategy{}

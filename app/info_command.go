@@ -6,7 +6,7 @@ import (
 	"github.com/Rollmops/pctl/output"
 )
 
-func ListCommand(names []string, format string) error {
+func InfoCommand(names []string, format string) error {
 
 	o := output.FormatMap[format]
 	if o == nil {

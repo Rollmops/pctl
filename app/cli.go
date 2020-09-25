@@ -16,8 +16,9 @@ func CreateCliApp() *cli.App {
 		Usage: "process control",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "loglevel",
-				Value: "Info",
+				Name:    "loglevel",
+				Value:   "Info",
+				Aliases: []string{"L"},
 			},
 		},
 		Commands: []*cli.Command{
@@ -71,7 +72,7 @@ func CreateCliApp() *cli.App {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					return ListCommand(c.Args().Slice(), c.String("format"))
+					return InfoCommand(c.Args().Slice(), c.String("format"))
 				},
 			},
 		},

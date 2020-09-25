@@ -5,25 +5,27 @@ import (
 	"github.com/Rollmops/pctl/common"
 	gopsutil "github.com/shirou/gopsutil/process"
 	"sort"
-	"strings"
 	"time"
 )
+
+func init() {
+	s := &CommandlinePidRetrieveStrategy{}
+	PidRetrieveStrategies["command"] = s
+}
 
 var (
 	CommandlinePidRetrieveStrategyWaitTime      = 10 * time.Millisecond
 	CommandlinePidRetrieveStrategyAttempts uint = 100
 )
 
-type CommandlinePidRetrieveStrategy struct {
-}
+type CommandlinePidRetrieveStrategy struct{}
 
 func (s *CommandlinePidRetrieveStrategy) Retrieve(p *Process) (int32, error) {
-	commandline := strings.Join(p.cmd.Args, " ")
 	var pid int32
 
 	if err := common.WaitUntilTrue(func() bool {
 		var err error
-		pid, err = _findPidForCommandline(commandline)
+		pid, err = _findPidForCommandline(p.cmd.Args)
 		if err != nil || pid == -1 {
 			return false
 		}
@@ -35,7 +37,7 @@ func (s *CommandlinePidRetrieveStrategy) Retrieve(p *Process) (int32, error) {
 	return pid, nil
 }
 
-func _findPidForCommandline(commandline string) (int32, error) {
+func _findPidForCommandline(command []string) (int32, error) {
 	processes, err := gopsutil.Processes()
 	if err != nil {
 		return -1, err
@@ -47,16 +49,15 @@ func _findPidForCommandline(commandline string) (int32, error) {
 	})
 
 	for _, _p := range processes {
-		_cmdline, err := _p.Cmdline()
+		processCommand, err := _p.CmdlineSlice()
 		if err != nil {
 			return -1, err
 		}
-		if _cmdline != "" && (_cmdline == commandline || strings.HasSuffix(_cmdline, commandline)) {
-			fmt.Println(_cmdline)
+		if common.CompareStringSlices(processCommand, command) {
 			return _p.Pid, nil
 		}
 	}
 
-	return -1, fmt.Errorf("unable to find process for commandline '%s'", commandline)
+	return -1, fmt.Errorf("unable to find process for command '%s'", command)
 
 }
