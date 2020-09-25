@@ -3,6 +3,8 @@ package output
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/shirou/gopsutil/net"
+	"github.com/shirou/gopsutil/process"
 	"io"
 	"os"
 )
@@ -27,10 +29,16 @@ type JsonConsoleOutput struct {
 }
 
 type RunningInfo struct {
-	Pid        int32   `json:"pid"`
-	Cwd        string  `json:"cwd"`
-	IsRunning  bool    `json:"isRunning"`
-	CPUPercent float64 `json:"cpuPercent"`
+	Pid         int32                   `json:"pid"`
+	Cwd         string                  `json:"cwd"`
+	IsRunning   bool                    `json:"isRunning"`
+	CPUPercent  float64                 `json:"cpuPercent"`
+	Connections []net.ConnectionStat    `json:"connections"`
+	Command     []string                `json:"command"`
+	MemoryInfo  *process.MemoryInfoStat `json:"memoryInfo"`
+	Exe         string                  `json:"exe"`
+	Username    string                  `json:"username"`
+	Terminal    string                  `json:"terminal"`
 }
 
 type JsonInfoEntry struct {
@@ -102,12 +110,42 @@ func getRunningInfo(infoEntry *InfoEntry) (*RunningInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	connections, err := infoEntry.RunningInfo.Connections()
+	if err != nil {
+		return nil, err
+	}
+	command, err := infoEntry.RunningInfo.CmdlineSlice()
+	if err != nil {
+		return nil, err
+	}
+
+	memoryInfo, err := infoEntry.RunningInfo.MemoryInfo()
+	if err != nil {
+		return nil, err
+	}
+	exe, err := infoEntry.RunningInfo.Exe()
+	if err != nil {
+		return nil, err
+	}
+
+	username, err := infoEntry.RunningInfo.Username()
+	if err != nil {
+		return nil, err
+	}
+	terminal, err := infoEntry.RunningInfo.Terminal()
 	if infoEntry.IsRunning {
 		runningInfo = &RunningInfo{
-			Pid:        infoEntry.RunningInfo.Pid,
-			Cwd:        cwd,
-			IsRunning:  isRunning,
-			CPUPercent: cpuPercent,
+			Pid:         infoEntry.RunningInfo.Pid,
+			Cwd:         cwd,
+			IsRunning:   isRunning,
+			CPUPercent:  cpuPercent,
+			Connections: connections,
+			Command:     command,
+			MemoryInfo:  memoryInfo,
+			Exe:         exe,
+			Username:    username,
+			Terminal:    terminal,
 		}
 	}
 	return runningInfo, nil
