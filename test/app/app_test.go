@@ -2,7 +2,7 @@ package app_test
 
 import (
 	"github.com/Rollmops/pctl/app"
-	gopsutil "github.com/shirou/gopsutil/process"
+	"github.com/Rollmops/pctl/test"
 	"os"
 	"path"
 	"testing"
@@ -23,19 +23,17 @@ func TestStartStopCommand(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	if !test.IsCommandRunning("sleep 1234") {
+		t.Fatal("'sleep 1234' should be running")
+	}
+
 	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "stop", "Test1"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	processes, err := gopsutil.Processes()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, p := range processes {
-		cmdline, _ := p.Cmdline()
-		if cmdline == "sleep 10" {
-			t.Fatal("Stopped process is still running")
-		}
+	if test.IsCommandRunning("sleep 1234") {
+		t.Fatal("'sleep 1234' should be stopped")
 	}
 }
