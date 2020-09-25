@@ -31,7 +31,7 @@ func StopCommand(names []string) error {
 				log.Warnf("Expected '%s' as running ... no need to stop it", name)
 			} else {
 				log.Infof("Stopping process '%s'", processConfig.Name)
-				err = p.Terminate()
+				err = p.Stop()
 				if err != nil {
 					log.Warnf("Unable to stop process '%s'", processConfig.Name)
 				}

@@ -12,17 +12,17 @@ import (
 )
 
 type Process struct {
-	Config            *config.ProcessConfig
-	info              *gopsutil.Process
-	cmd               *exec.Cmd
-	terminateStrategy TerminateStrategy
+	Config       *config.ProcessConfig
+	info         *gopsutil.Process
+	cmd          *exec.Cmd
+	stopStrategy StopStrategy
 }
 
 func NewProcess(config *config.ProcessConfig) *Process {
 	return &Process{
 		Config: config,
 		cmd:    nil,
-		terminateStrategy: &SignalTerminateStrategy{
+		stopStrategy: &SignalStopStrategy{
 			Signal: syscall.SIGTERM,
 		},
 	}
@@ -64,8 +64,8 @@ func (p *Process) Start() error {
 
 }
 
-func (p *Process) Terminate() error {
-	err := p.terminateStrategy.Terminate(p)
+func (p *Process) Stop() error {
+	err := p.stopStrategy.Stop(p)
 	if err != nil {
 		return err
 	}
