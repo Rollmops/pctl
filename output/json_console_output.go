@@ -61,10 +61,13 @@ func (j *JsonConsoleOutput) Write(infoEntries []*InfoEntry) error {
 			return err
 		}
 		jsonInfoEntry := &JsonInfoEntry{
-			Name:              infoEntry.Name,
-			ConfiguredCommand: infoEntry.ConfigCommand,
-			RunningCommand:    infoEntry.RunningCommand,
-			Info:              runningInfo,
+			Name:                 infoEntry.Name,
+			ConfiguredCommand:    infoEntry.ConfigCommand,
+			RunningCommand:       infoEntry.RunningCommand,
+			IsRunning:            infoEntry.IsRunning,
+			Info:                 runningInfo,
+			StoppedUnexpectedly:  infoEntry.StoppedUnexpectedly,
+			ConfigCommandChanged: infoEntry.ConfigCommandChanged,
 		}
 		jsonInfoEntries = append(jsonInfoEntries, jsonInfoEntry)
 	}
