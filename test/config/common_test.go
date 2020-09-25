@@ -9,21 +9,21 @@ func TestFindByName(t *testing.T) {
 	_config := config.Config{
 		Processes: []*config.ProcessConfig{
 			{
-				Name: "p1",
-				Cmd:  []string{"sleep", "10"},
+				Name:    "p1",
+				Command: []string{"sleep", "10"},
 			},
 			{
-				Name: "p2",
-				Cmd:  []string{"ls", "-la"},
+				Name:    "p2",
+				Command: []string{"ls", "-la"},
 			},
 		},
 	}
 
-	if p := _config.FindByName("p1"); p.Cmd[0] != "sleep" {
-		t.Fatalf("sleep != %s", p.Cmd[0])
+	if p := _config.FindByName("p1"); p.Command[0] != "sleep" {
+		t.Fatalf("sleep != %s", p.Command[0])
 	}
-	if p := _config.FindByName("p2"); p.Cmd[1] != "-la" {
-		t.Fatalf("-la != %s", p.Cmd[1])
+	if p := _config.FindByName("p2"); p.Command[1] != "-la" {
+		t.Fatalf("-la != %s", p.Command[1])
 	}
 	if p := _config.FindByName("NOT_THERE"); p != nil {
 		t.Fatal("Expected process config NOT_THERE to be nil")

@@ -28,8 +28,8 @@ func TestDefaultPidRetrieveStrategy(t *testing.T) {
 
 	s := process.DefaultPidRetrieveStrategy{}
 	c := &config.ProcessConfig{
-		Name: "PidTest",
-		Cmd:  []string{"bash", testScriptPath, tmpPidFilePath},
+		Name:    "PidTest",
+		Command: []string{"bash", testScriptPath, tmpPidFilePath},
 	}
 	p := process.NewProcess(c)
 	err := p.Start()

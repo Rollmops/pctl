@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
@@ -47,7 +48,13 @@ func (c *CsvReader) Read() (*Data, error) {
 		if err != nil {
 			return nil, err
 		}
-		data = append(data, DataEntry{Name: record[0], Pid: int32(pid), Cmd: record[2]})
+
+		var command []string
+		err = json.Unmarshal([]byte(record[2]), &command)
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, DataEntry{Name: record[0], Pid: int32(pid), Command: command})
 	}
 
 	return &Data{Entries: data}, nil

@@ -11,19 +11,6 @@ import (
 )
 
 func CreateCliApp() *cli.App {
-	formatStringFlag := &cli.StringFlag{
-		Name:     "format",
-		EnvVars:  []string{"PCTL_OUTPUT_FORMAT"},
-		Required: false,
-		Value:    "simple",
-		Usage: func() string {
-			keys := make([]string, 0, len(output.FormatMap))
-			for k := range output.FormatMap {
-				keys = append(keys, k)
-			}
-			return "formats: " + strings.Join(keys, ",")
-		}(),
-	}
 	return &cli.App{
 		Name:  "pctl",
 		Usage: "process control",
@@ -65,13 +52,26 @@ func CreateCliApp() *cli.App {
 				},
 			},
 			{
-				Name:  "list",
-				Usage: "list all configured processes and status",
+				Name:      "info",
+				Usage:     "show info for all or specified processes",
+				ArgsUsage: "a list of process names - if empty, info of all processes will be shown",
 				Flags: []cli.Flag{
-					formatStringFlag,
+					&cli.StringFlag{
+						Name:     "format",
+						EnvVars:  []string{"PCTL_OUTPUT_FORMAT"},
+						Required: false,
+						Value:    "simple",
+						Usage: func() string {
+							keys := make([]string, 0, len(output.FormatMap))
+							for k := range output.FormatMap {
+								keys = append(keys, k)
+							}
+							return "formats: " + strings.Join(keys, ",")
+						}(),
+					},
 				},
 				Action: func(c *cli.Context) error {
-					return ListCommand(c.String("format"))
+					return ListCommand(c.Args().Slice(), c.String("format"))
 				},
 			},
 		},

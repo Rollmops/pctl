@@ -10,8 +10,8 @@ type Output interface {
 
 type InfoEntry struct {
 	Name           string
-	ConfigCommand  string
-	RunningCommand string
+	ConfigCommand  []string
+	RunningCommand []string
 	// simple flag if process is running
 	IsRunning bool
 	// process was stopped, but not by pctl

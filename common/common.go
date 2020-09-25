@@ -19,3 +19,15 @@ func WaitUntilTrue(testFunction func() bool, interval time.Duration, attempts ui
 	}
 	return nil
 }
+
+func CompareStringSlices(slice1 []string, slice2 []string) bool {
+	if len(slice1) != len(slice2) {
+		return false
+	}
+	for index := range slice1 {
+		if slice1[index] != slice2[index] {
+			return false
+		}
+	}
+	return true
+}

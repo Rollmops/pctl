@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
@@ -44,7 +45,11 @@ func (c *CsvWriter) Write(data *Data) error {
 
 	log.Debugf("Writing %d entries to %s", len(data.Entries), c.stateFilePath)
 	for _, d := range data.Entries {
-		err := writer.Write([]string{d.Name, strconv.Itoa(int(d.Pid)), d.Cmd})
+		commandString, err := json.Marshal(d.Command)
+		if err != nil {
+			return err
+		}
+		err = writer.Write([]string{d.Name, strconv.Itoa(int(d.Pid)), string(commandString)})
 		if err != nil {
 			return err
 		}

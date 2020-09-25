@@ -32,13 +32,13 @@ func NewDataEntryFromProcess(p *process.Process) (*DataEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	cmdline, err := info.Cmdline()
+	cmdline, err := info.CmdlineSlice()
 	if err != nil {
 		return nil, err
 	}
 	return &DataEntry{
-		Pid:  pid,
-		Name: p.Config.Name,
-		Cmd:  cmdline,
+		Pid:     pid,
+		Name:    p.Config.Name,
+		Command: cmdline,
 	}, nil
 }

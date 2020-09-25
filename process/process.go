@@ -52,11 +52,11 @@ func (p *Process) Pid() (int32, error) {
 }
 
 func (p *Process) Start() error {
-	name := p.Config.Cmd[0]
+	name := p.Config.Command[0]
 
 	var args []string
-	if len(p.Config.Cmd) > 1 {
-		args = p.Config.Cmd[1:]
+	if len(p.Config.Command) > 1 {
+		args = p.Config.Command[1:]
 	}
 
 	p.cmd = exec.Command(name, args...)

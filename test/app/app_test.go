@@ -18,7 +18,7 @@ func TestStartListStopCommand(t *testing.T) {
 		t.Fatal("'sleep 1234' should be running")
 	}
 
-	err = pctlApp.Run([]string{"pctl", "list"})
+	err = pctlApp.Run([]string{"pctl", "info"})
 
 	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "stop", "Test1"})
 	if err != nil {

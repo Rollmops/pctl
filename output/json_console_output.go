@@ -35,8 +35,8 @@ type RunningInfo struct {
 
 type JsonInfoEntry struct {
 	Name                 string       `json:"name"`
-	ConfiguredCommand    string       `json:"configuredCommand"`
-	RunningCommand       string       `json:"runningCommand"`
+	ConfiguredCommand    []string     `json:"configuredCommand"`
+	RunningCommand       []string     `json:"runningCommand"`
 	IsRunning            bool         `json:"isRunning"`
 	StoppedUnexpectedly  bool         `json:"stoppedUnexpectedly"`
 	ConfigCommandChanged bool         `json:"configCommandChanged"`

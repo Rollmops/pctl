@@ -5,9 +5,9 @@ type Data struct {
 }
 
 type DataEntry struct {
-	Pid  int32
-	Name string
-	Cmd  string
+	Pid     int32
+	Name    string
+	Command []string
 }
 
 type Writer interface {
@@ -32,7 +32,7 @@ func (d *Data) AddOrUpdateEntry(entry *DataEntry) {
 	for index, _entry := range d.Entries {
 		if _entry.Name == entry.Name {
 			d.Entries[index].Pid = entry.Pid
-			d.Entries[index].Cmd = entry.Cmd
+			d.Entries[index].Command = entry.Command
 			return
 		}
 	}

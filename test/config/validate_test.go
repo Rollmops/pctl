@@ -7,12 +7,12 @@ func TestValidateConfig(t *testing.T) {
 	_config := config.Config{
 		Processes: []*config.ProcessConfig{
 			{
-				Name: "p1",
-				Cmd:  []string{"sleep 1"},
+				Name:    "p1",
+				Command: []string{"sleep 1"},
 			},
 			{
-				Name: "p1",
-				Cmd:  []string{"sleep 2"},
+				Name:    "p1",
+				Command: []string{"sleep 2"},
 			},
 		},
 	}
@@ -28,8 +28,8 @@ func TestInvalidCmdLength(t *testing.T) {
 	_config := config.Config{
 		Processes: []*config.ProcessConfig{
 			{
-				Name: "p1",
-				Cmd:  []string{},
+				Name:    "p1",
+				Command: []string{},
 			},
 		},
 	}

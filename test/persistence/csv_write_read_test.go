@@ -1,6 +1,7 @@
 package persistence_test
 
 import (
+	"github.com/Rollmops/pctl/common"
 	"github.com/Rollmops/pctl/persistence"
 	"io/ioutil"
 	"os"
@@ -18,14 +19,14 @@ func TestWriteReadCsv(t *testing.T) {
 	data := &persistence.Data{
 		Entries: []persistence.DataEntry{
 			{
-				Pid:  1,
-				Name: "process1",
-				Cmd:  "sleep infinity",
+				Pid:     1,
+				Name:    "process1",
+				Command: []string{"sleep", "infinity"},
 			},
 			{
-				Pid:  2,
-				Name: "process2",
-				Cmd:  "cat",
+				Pid:     2,
+				Name:    "process2",
+				Command: []string{"cat"},
 			},
 		},
 	}
@@ -43,7 +44,9 @@ func TestWriteReadCsv(t *testing.T) {
 	}
 
 	for index := range data.Entries {
-		if data.Entries[index] != readData.Entries[index] {
+		if data.Entries[index].Pid != readData.Entries[index].Pid ||
+			!common.CompareStringSlices(data.Entries[index].Command, readData.Entries[index].Command) ||
+			data.Entries[index].Name != data.Entries[index].Name {
 			t.Fatalf("%v != %v", data.Entries[index], readData.Entries[index])
 		}
 	}

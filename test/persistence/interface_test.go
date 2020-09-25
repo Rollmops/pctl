@@ -10,17 +10,17 @@ func TestDataHandling(t *testing.T) {
 	data := persistence.Data{
 		Entries: []persistence.DataEntry{
 			{
-				Pid:  100,
-				Name: "p1",
-				Cmd:  "sleep 100",
+				Pid:     100,
+				Name:    "p1",
+				Command: []string{"sleep", "100"},
 			},
 		},
 	}
 
 	data.AddOrUpdateEntry(&persistence.DataEntry{
-		Name: "p2",
-		Pid:  101,
-		Cmd:  "ls -la",
+		Name:    "p2",
+		Pid:     101,
+		Command: []string{"ls", "-la"},
 	})
 
 	if len(data.Entries) != 2 {
@@ -28,9 +28,9 @@ func TestDataHandling(t *testing.T) {
 	}
 
 	data.AddOrUpdateEntry(&persistence.DataEntry{
-		Name: "p2",
-		Pid:  102,
-		Cmd:  "ls -la",
+		Name:    "p2",
+		Pid:     102,
+		Command: []string{"ls", "-la"},
 	})
 
 	if len(data.Entries) != 2 {

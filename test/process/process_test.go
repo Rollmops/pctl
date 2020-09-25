@@ -19,8 +19,8 @@ func TestProcessStart(t *testing.T) {
 	}
 
 	p := process.NewProcess(&config.ProcessConfig{
-		Name: "test",
-		Cmd:  []string{"rm", tmpFile.Name()},
+		Name:    "test",
+		Command: []string{"rm", tmpFile.Name()},
 	})
 
 	err = p.Start()
@@ -40,8 +40,8 @@ func TestProcessStart(t *testing.T) {
 
 func TestProcessIsRunning(t *testing.T) {
 	p := process.NewProcess(&config.ProcessConfig{
-		Name: "test",
-		Cmd:  []string{"sleep", "1"},
+		Name:    "test",
+		Command: []string{"sleep", "1"},
 	})
 
 	if p.IsRunning() {
@@ -70,8 +70,8 @@ func TestProcessInfo(t *testing.T) {
 	for {
 		seconds += 1
 		p := process.NewProcess(&config.ProcessConfig{
-			Name: "test",
-			Cmd:  []string{"sleep", strconv.Itoa(seconds)},
+			Name:    "test",
+			Command: []string{"sleep", strconv.Itoa(seconds)},
 		})
 
 		_, err := p.Info()

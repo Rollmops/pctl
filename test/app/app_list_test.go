@@ -10,7 +10,7 @@ func TestAppListCommand(t *testing.T) {
 	pctlApp := app.CreateCliApp()
 
 	out := capturer.CaptureOutput(func() {
-		err := pctlApp.Run([]string{"pctl", "list"})
+		err := pctlApp.Run([]string{"pctl", "info"})
 		if err != nil {
 			t.Fatal(err)
 		}
