@@ -22,7 +22,7 @@ func StopCommand(names []string) error {
 			log.Infof("Process '%s' is not running", processConfig.Name)
 			continue
 		} else {
-			p := process.NewProcess(processConfig)
+			p := process.Process{Config: processConfig}
 			err = p.SynchronizeWithPid(dataEntry.Pid)
 			if err != nil {
 				return err
@@ -34,16 +34,15 @@ func StopCommand(names []string) error {
 				err = p.Stop()
 				if err != nil {
 					log.Warnf("Unable to stop process '%s'", processConfig.Name)
+				} else {
+					data.RemoveByName(processConfig.Name)
 				}
 			}
-			data.RemoveByName(processConfig.Name)
 			err = CurrentContext.persistenceWriter.Write(data)
 			if err != nil {
 				return err
 			}
-
 		}
 	}
-
 	return nil
 }

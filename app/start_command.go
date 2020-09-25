@@ -64,7 +64,7 @@ func StartCommand(names []string) error {
 
 func _startProcess(processConfig *config.ProcessConfig) (*process.Process, error) {
 	log.Infof("Starting process '%s'", processConfig.Name)
-	_process := process.NewProcess(processConfig)
+	_process := &process.Process{Config: processConfig}
 	err := _process.Start()
 	if err != nil {
 		return nil, err

@@ -31,7 +31,7 @@ func TestDefaultPidRetrieveStrategy(t *testing.T) {
 		Name:    "PidTest",
 		Command: []string{"bash", testScriptPath, tmpPidFilePath},
 	}
-	p := process.NewProcess(c)
+	p := &process.Process{Config: c}
 	err := p.Start()
 	if err != nil {
 		t.Fatal(err)

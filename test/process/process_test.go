@@ -18,10 +18,10 @@ func TestProcessStart(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := process.NewProcess(&config.ProcessConfig{
+	p := &process.Process{Config: &config.ProcessConfig{
 		Name:    "test",
 		Command: []string{"rm", tmpFile.Name()},
-	})
+	}}
 
 	err = p.Start()
 	if err != nil {
@@ -39,10 +39,10 @@ func TestProcessStart(t *testing.T) {
 }
 
 func TestProcessIsRunning(t *testing.T) {
-	p := process.NewProcess(&config.ProcessConfig{
+	p := &process.Process{Config: &config.ProcessConfig{
 		Name:    "test",
 		Command: []string{"sleep", "1"},
-	})
+	}}
 
 	if p.IsRunning() {
 		t.Fatal("Expect process to be not running")
@@ -69,10 +69,10 @@ func TestProcessInfo(t *testing.T) {
 
 	for {
 		seconds += 1
-		p := process.NewProcess(&config.ProcessConfig{
+		p := &process.Process{Config: &config.ProcessConfig{
 			Name:    "test",
 			Command: []string{"sleep", strconv.Itoa(seconds)},
-		})
+		}}
 
 		_, err := p.Info()
 		if err == nil {

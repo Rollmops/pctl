@@ -2,6 +2,9 @@ package common
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -30,4 +33,15 @@ func CompareStringSlices(slice1 []string, slice2 []string) bool {
 		}
 	}
 	return true
+}
+
+func ExpandPath(path string) (string, error) {
+	path = strings.Replace(path, "~", os.Getenv("HOME"), 1)
+	path, err := filepath.Abs(os.ExpandEnv(path))
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
+
 }

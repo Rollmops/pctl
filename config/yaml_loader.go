@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/Rollmops/pctl/common"
 	"io/ioutil"
 	"path/filepath"
 
@@ -19,8 +20,9 @@ type YamlLoader struct {
 }
 
 type _rawConfig struct {
-	Includes  []string
-	Processes []*ProcessConfig
+	Includes     []string
+	Processes    []*ProcessConfig
+	StopStrategy StopStrategyConfig
 }
 
 func NewYamlLoader() *YamlLoader {
@@ -28,7 +30,7 @@ func NewYamlLoader() *YamlLoader {
 }
 
 func (l *YamlLoader) Load(path string) (*Config, error) {
-	path, err := filepath.Abs(os.ExpandEnv(path))
+	path, err := common.ExpandPath(path)
 	if err != nil {
 		return nil, err
 	}

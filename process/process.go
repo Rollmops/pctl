@@ -3,29 +3,18 @@ package process
 import (
 	"fmt"
 	"github.com/Rollmops/pctl/common"
+	"github.com/Rollmops/pctl/config"
+	"github.com/Rollmops/pctl/stop_strategy"
 	"os/exec"
-	"syscall"
 	"time"
 
-	"github.com/Rollmops/pctl/config"
 	gopsutil "github.com/shirou/gopsutil/process"
 )
 
 type Process struct {
-	Config       *config.ProcessConfig
-	info         *gopsutil.Process
-	cmd          *exec.Cmd
-	stopStrategy StopStrategy
-}
-
-func NewProcess(config *config.ProcessConfig) *Process {
-	return &Process{
-		Config: config,
-		cmd:    nil,
-		stopStrategy: &SignalStopStrategy{
-			Signal: syscall.SIGTERM,
-		},
-	}
+	Config *config.ProcessConfig
+	info   *gopsutil.Process
+	cmd    *exec.Cmd
 }
 
 func (p *Process) SynchronizeWithPid(pid int32) error {
@@ -65,12 +54,17 @@ func (p *Process) Start() error {
 }
 
 func (p *Process) Stop() error {
-	err := p.stopStrategy.Stop(p)
+	_process, err := p.Info()
+	if err != nil {
+		return err
+	}
+	stopStrategy := stop_strategy.NewStopStrategyFromConfig(p.Config.StopStrategy)
+	err = stopStrategy.Stop(p.Config.Name, _process)
 	if err != nil {
 		return err
 	}
 	err = common.WaitUntilTrue(func() bool {
-		return p.IsRunning()
+		return !p.IsRunning()
 	}, 100*time.Millisecond, 50)
 	if err != nil {
 		pid, _ := p.Pid()
