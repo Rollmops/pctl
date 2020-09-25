@@ -1,14 +1,14 @@
-package view_test
+package output_test
 
 import (
 	"bytes"
 	"github.com/Rollmops/pctl/config"
+	"github.com/Rollmops/pctl/output"
 	"github.com/Rollmops/pctl/process"
-	"github.com/Rollmops/pctl/view"
 	"testing"
 )
 
-func TestSimpleConsoleViewer(t *testing.T) {
+func TestSimpleConsoleOutput(t *testing.T) {
 	processes := []*process.Process{
 		process.NewProcess(
 			&config.ProcessConfig{
@@ -24,10 +24,10 @@ func TestSimpleConsoleViewer(t *testing.T) {
 
 	var w bytes.Buffer
 
-	viewer := view.NewSimpleConsoleViewer(&w)
-	//viewer := view.NewSimpleConsoleViewer(os.Stdout)
+	consoleOutput := output.NewSimpleConsoleOutput(&w)
+	//consoleOutput := consoleOutput.NewSimpleConsoleOutput(os.Stdout)
 
-	err := viewer.View(processes)
+	err := consoleOutput.Write(processes)
 	if err != nil {
 		t.Fatal(err)
 	}

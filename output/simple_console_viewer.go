@@ -1,4 +1,4 @@
-package view
+package output
 
 import (
 	"fmt"
@@ -6,15 +6,15 @@ import (
 	"io"
 )
 
-type SimpleConsoleViewer struct {
+type SimpleConsoleOutput struct {
 	writer io.Writer
 }
 
-func NewSimpleConsoleViewer(file io.Writer) SimpleConsoleViewer {
-	return SimpleConsoleViewer{writer: file}
+func NewSimpleConsoleOutput(file io.Writer) SimpleConsoleOutput {
+	return SimpleConsoleOutput{writer: file}
 }
 
-func (v *SimpleConsoleViewer) View(processes []*process.Process) error {
+func (v *SimpleConsoleOutput) Write(processes []*process.Process) error {
 	for _, p := range processes {
 		isRunning := "no"
 		if p.IsRunning() {
