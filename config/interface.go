@@ -11,5 +11,5 @@ type ProcessConfig struct {
 }
 
 type Config struct {
-	Processes []ProcessConfig
+	Processes []*ProcessConfig
 }

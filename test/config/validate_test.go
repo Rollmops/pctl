@@ -5,7 +5,7 @@ import "github.com/Rollmops/pctl/config"
 
 func TestValidateConfig(t *testing.T) {
 	_config := config.Config{
-		Processes: []config.ProcessConfig{
+		Processes: []*config.ProcessConfig{
 			{
 				Name: "p1",
 				Cmd:  []string{"sleep 1"},
@@ -26,7 +26,7 @@ func TestValidateConfig(t *testing.T) {
 
 func TestInvalidCmdLength(t *testing.T) {
 	_config := config.Config{
-		Processes: []config.ProcessConfig{
+		Processes: []*config.ProcessConfig{
 			{
 				Name: "p1",
 				Cmd:  []string{},

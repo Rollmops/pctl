@@ -10,12 +10,17 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+func init() {
+	SuffixConfigLoaderMap["yaml"] = &YamlLoader{}
+	SuffixConfigLoaderMap["yml"] = &YamlLoader{}
+}
+
 type YamlLoader struct {
 }
 
 type _rawConfig struct {
 	Includes  []string
-	Processes []ProcessConfig
+	Processes []*ProcessConfig
 }
 
 func NewYamlLoader() *YamlLoader {

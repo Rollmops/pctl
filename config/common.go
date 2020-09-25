@@ -9,15 +9,12 @@ import (
 
 const _configFileName string = "pctl.yml"
 
-var SuffixConfigLoaderMap = map[string]Loader{
-	"yaml": &YamlLoader{},
-	"yml":  &YamlLoader{},
-}
+var SuffixConfigLoaderMap = map[string]Loader{}
 
 func (c *Config) FindByName(name string) *ProcessConfig {
 	for _, p := range c.Processes {
 		if p.Name == name {
-			return &p
+			return p
 		}
 	}
 	return nil

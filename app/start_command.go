@@ -52,6 +52,8 @@ func StartCommand(names []string) error {
 				if err != nil {
 					return err
 				}
+			} else {
+				log.Infof("Process '%s' is already running", name)
 			}
 		}
 		data.AddOrUpdateEntry(dataEntry)

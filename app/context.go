@@ -2,13 +2,16 @@ package app
 
 import (
 	"github.com/Rollmops/pctl/config"
+	"github.com/Rollmops/pctl/output"
 	"github.com/Rollmops/pctl/persistence"
+	"os"
 )
 
 type Context struct {
 	config            *config.Config
 	persistenceWriter persistence.Writer
 	persistenceReader persistence.Reader
+	output            output.Output
 }
 
 var CurrentContext *Context
@@ -25,6 +28,7 @@ func NewContext() (*Context, error) {
 	return &Context{
 		persistenceWriter: persistenceWriter,
 		persistenceReader: persistenceReader,
+		output:            output.NewSimpleConsoleOutput(os.Stdout),
 	}, nil
 }
 

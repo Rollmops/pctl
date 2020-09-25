@@ -18,6 +18,7 @@ type Reader interface {
 	Read() (*Data, error)
 }
 
+// Find the persistence data entry for that name or nil
 func (d *Data) FindByName(name string) *DataEntry {
 	for _, entry := range d.Entries {
 		if entry.Name == name {

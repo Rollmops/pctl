@@ -7,7 +7,7 @@ import (
 
 func TestFindByName(t *testing.T) {
 	_config := config.Config{
-		Processes: []config.ProcessConfig{
+		Processes: []*config.ProcessConfig{
 			{
 				Name: "p1",
 				Cmd:  []string{"sleep", "10"},

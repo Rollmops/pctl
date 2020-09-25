@@ -2,13 +2,28 @@ package app
 
 import (
 	"fmt"
+	"github.com/Rollmops/pctl/output"
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
 func CreateCliApp() *cli.App {
+	formatStringFlag := &cli.StringFlag{
+		Name:     "format",
+		EnvVars:  []string{"PCTL_OUTPUT_FORMAT"},
+		Required: false,
+		Value:    "simple",
+		Usage: func() string {
+			keys := make([]string, 0, len(output.FormatMap))
+			for k := range output.FormatMap {
+				keys = append(keys, k)
+			}
+			return "formats: " + strings.Join(keys, ",")
+		}(),
+	}
 	return &cli.App{
 		Name:  "pctl",
 		Usage: "process control",
@@ -47,6 +62,16 @@ func CreateCliApp() *cli.App {
 						return fmt.Errorf("missing process names")
 					}
 					return StopCommand(c.Args().Slice())
+				},
+			},
+			{
+				Name:  "list",
+				Usage: "list all configured processes and status",
+				Flags: []cli.Flag{
+					formatStringFlag,
+				},
+				Action: func(c *cli.Context) error {
+					return ListCommand(c.String("format"))
 				},
 			},
 		},
