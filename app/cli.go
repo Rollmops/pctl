@@ -36,7 +36,7 @@ func CreateCliApp(outputFile *os.File) *cli.App {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "loglevel",
-				Value:   "Info",
+				Value:   "warning",
 				EnvVars: []string{"PCTL_LOG_LEVEL"},
 				Aliases: []string{"L"},
 				Usage:   "level: trace,debug,info,warn,warning,error,fatal,panic",
