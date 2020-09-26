@@ -59,7 +59,12 @@ func (p *Process) Stop() error {
 		return err
 	}
 	stopStrategy := stop_strategy.NewStopStrategyFromConfig(p.Config.StopStrategy)
-	return stopStrategy.Stop(p.Config.Name, _process)
+	err = stopStrategy.Stop(p.Config.Name, _process)
+	if err != nil {
+
+		return err
+	}
+	return nil
 }
 
 func (p *Process) WaitForStop(waitTimeInSeconds int) error {
@@ -73,6 +78,7 @@ func (p *Process) WaitForStop(waitTimeInSeconds int) error {
 		pid, _ := p.Pid()
 		return fmt.Errorf("unable to stop process '%s' on PID %d", p.Config.Name, pid)
 	}
+
 	return nil
 }
 

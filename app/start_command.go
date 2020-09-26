@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/Rollmops/pctl/config"
+	"github.com/Rollmops/pctl/output"
 	"github.com/Rollmops/pctl/persistence"
 	"github.com/Rollmops/pctl/process"
 	gopsutil "github.com/shirou/gopsutil/process"
@@ -76,11 +77,12 @@ func _startProcess(processConfig *config.ProcessConfig, data *persistence.Data) 
 		}
 	}
 	if startNeeded {
-		fmt.Printf("Starting process '%s'\n", processConfig.Name)
+		fmt.Printf("Starting process '%s' ... ", processConfig.Name)
 		_process := &process.Process{Config: processConfig}
 		err := _process.Start()
 		if err != nil {
-			return nil
+			fmt.Printf("%s\n", output.Red("Failed"))
+			return err
 		}
 		dataEntry, err = persistence.NewDataEntryFromProcess(_process)
 		data.AddOrUpdateEntry(dataEntry)
@@ -88,6 +90,7 @@ func _startProcess(processConfig *config.ProcessConfig, data *persistence.Data) 
 		if err != nil {
 			return err
 		}
+		fmt.Printf("%s\n", output.Green("Ok"))
 	}
 	return nil
 }

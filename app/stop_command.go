@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/Rollmops/pctl/output"
 	"github.com/Rollmops/pctl/process"
 	log "github.com/sirupsen/logrus"
 )
@@ -31,13 +32,22 @@ func StopCommand(names []string, noWait bool, waitTime int) error {
 				log.Warnf("Expected '%s' as running ... no need to stop it", name)
 			} else {
 				log.Infof("Stopping process '%s'", processConfig.Name)
+				fmt.Printf("Stopping process '%s' ... ", processConfig.Name)
 				err = p.Stop()
-				if !noWait && err == nil {
+				if err != nil {
+					fmt.Printf("%s\n", output.Red("Failed"))
+					return err
+				}
+				fmt.Printf("%s\n", output.Green("Ok"))
+				if !noWait {
+					fmt.Printf("Waiting for process stop ... ")
 					err = p.WaitForStop(waitTime)
 				}
 				if err != nil {
+					fmt.Printf("%s\n", output.Red("Failed"))
 					log.Warnf("Unable to stop process '%s'", processConfig.Name)
 				} else {
+					fmt.Printf("%s\n", output.Green("Ok"))
 					data.RemoveByName(processConfig.Name)
 				}
 			}

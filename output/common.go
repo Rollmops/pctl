@@ -11,6 +11,7 @@ import (
 var FormatMap = map[string]Output{}
 
 var Green = color.New(color.FgGreen).SprintFunc()
+var Red = color.New(color.FgRed).SprintFunc()
 
 func CreateInfoEntries(persistenceData *persistence.Data, processConfigs []*config.ProcessConfig) ([]*InfoEntry, error) {
 	var infoEntries []*InfoEntry
