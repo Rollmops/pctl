@@ -10,7 +10,7 @@ import (
 
 var StrategyMapping = map[string]string{
 	"exact":     "command",
-	"ends-with": "command_ends_with",
+	"ends-with": "command-ends-with",
 }
 
 func SyncCommand(names []string, all bool, strategy string) error {

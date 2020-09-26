@@ -11,9 +11,9 @@ import (
 
 func init() {
 	s := &CommandlineEndsWithPidRetrieveStrategy{}
-	PidRetrieveStrategies["command_ends_with"] = s
-	PidRetrieveStrategies["cmd_ends_with"] = s
-	PidRetrieveStrategies["cmdline_ends_with"] = s
+	PidRetrieveStrategies["command-ends-with"] = s
+	PidRetrieveStrategies["cmd-ends-with"] = s
+	PidRetrieveStrategies["cmdline-ends-with"] = s
 }
 
 type CommandlineEndsWithPidRetrieveStrategy struct{}
