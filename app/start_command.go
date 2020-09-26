@@ -77,20 +77,21 @@ func _startProcess(processConfig *config.ProcessConfig, data *persistence.Data) 
 		}
 	}
 	if startNeeded {
-		fmt.Printf("Starting process '%s' ... ", processConfig.Name)
 		_process := &process.Process{Config: processConfig}
-		err := _process.Start()
+
+		err := output.PrintMessageAndStatus(fmt.Sprintf("Starting process '%s'", processConfig.Name),
+			func() error {
+				err := _process.Start()
+				if err != nil {
+					return err
+				}
+				dataEntry, err = persistence.NewDataEntryFromProcess(_process)
+				data.AddOrUpdateEntry(dataEntry)
+				return CurrentContext.persistenceWriter.Write(data)
+			})
 		if err != nil {
-			fmt.Printf("%s\n", output.Red("Failed"))
 			return err
 		}
-		dataEntry, err = persistence.NewDataEntryFromProcess(_process)
-		data.AddOrUpdateEntry(dataEntry)
-		err = CurrentContext.persistenceWriter.Write(data)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%s\n", output.Green("Ok"))
 	}
 	return nil
 }

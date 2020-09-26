@@ -7,7 +7,6 @@ import (
 )
 
 func InfoCommand(names []string, format string) error {
-
 	o := output.FormatMap[format]
 	o.SetWriter(CurrentContext.OutputWriter)
 	if o == nil {
