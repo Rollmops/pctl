@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func StopCommand(names []string) error {
+func StopCommand(names []string, noWait bool, waitTime int) error {
 	data, err := CurrentContext.persistenceReader.Read()
 	if err != nil {
 		return err
@@ -32,6 +32,9 @@ func StopCommand(names []string) error {
 			} else {
 				log.Infof("Stopping process '%s'", processConfig.Name)
 				err = p.Stop()
+				if !noWait && err == nil {
+					err = p.WaitForStop(waitTime)
+				}
 				if err != nil {
 					log.Warnf("Unable to stop process '%s'", processConfig.Name)
 				} else {

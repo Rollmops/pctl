@@ -2,12 +2,12 @@ package main
 
 import (
 	"github.com/Rollmops/pctl/app"
-	log "github.com/sirupsen/logrus"
+	"log"
 	"os"
 )
 
 func main() {
-	pctlApp := app.CreateCliApp()
+	pctlApp := app.CreateCliApp(os.Stdout)
 	err := pctlApp.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)

@@ -3,29 +3,20 @@ package app_test
 import (
 	"github.com/Rollmops/pctl/app"
 	"github.com/Rollmops/pctl/test"
+	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
-func TestStartListStopCommand(t *testing.T) {
-	pctlApp := app.CreateCliApp()
+func TestStartStopCommand(t *testing.T) {
+	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should not be running")
+	pctlApp := app.CreateCliApp(os.Stdout)
 
 	err := pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "Test1"})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !test.IsCommandRunning("sleep 1234") {
-		t.Fatal("'sleep 1234' should be running")
-	}
-
-	err = pctlApp.Run([]string{"pctl", "info"})
+	assert.NoError(t, err)
+	assert.True(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be running")
 
 	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "stop", "Test1"})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if test.IsCommandRunning("sleep 1234") {
-		t.Fatal("'sleep 1234' should be stopped")
-	}
+	assert.NoError(t, err)
+	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be stopped")
 }

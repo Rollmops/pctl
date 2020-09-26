@@ -9,6 +9,7 @@ import (
 func InfoCommand(names []string, format string) error {
 
 	o := output.FormatMap[format]
+	o.SetWriter(CurrentContext.OutputWriter)
 	if o == nil {
 		return fmt.Errorf("unknown output format: '%s'", format)
 	}

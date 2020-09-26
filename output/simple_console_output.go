@@ -8,18 +8,18 @@ import (
 )
 
 func init() {
-	FormatMap["simple"] = NewSimpleConsoleOutput(os.Stdout)
+	FormatMap["simple"] = &SimpleConsoleOutput{}
 }
 
 type SimpleConsoleOutput struct {
 	writer io.Writer
 }
 
-func NewSimpleConsoleOutput(file io.Writer) *SimpleConsoleOutput {
-	return &SimpleConsoleOutput{writer: file}
+func (o *SimpleConsoleOutput) SetWriter(writer *os.File) {
+	o.writer = writer
 }
 
-func (v *SimpleConsoleOutput) Write(infoEntries []*InfoEntry) error {
+func (o *SimpleConsoleOutput) Write(infoEntries []*InfoEntry) error {
 	for _, e := range infoEntries {
 
 		b, err := json.Marshal(e.RunningCommand)
@@ -27,8 +27,8 @@ func (v *SimpleConsoleOutput) Write(infoEntries []*InfoEntry) error {
 			return err
 		}
 
-		line := fmt.Sprintf("%s: %s, running: %v, dirty: %v\n", e.Name, string(b), e.IsRunning, e.ConfigCommandChanged)
-		if _, err := v.writer.Write([]byte(line)); err != nil {
+		line := fmt.Sprintf("%s: %s, running: %o, dirty: %o\n", e.Name, string(b), e.IsRunning, e.ConfigCommandChanged)
+		if _, err := o.writer.Write([]byte(line)); err != nil {
 			return err
 		}
 	}

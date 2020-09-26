@@ -1,7 +1,7 @@
 package persistence
 
 type Data struct {
-	Entries []DataEntry
+	Entries []*DataEntry
 }
 
 type DataEntry struct {
@@ -22,7 +22,7 @@ type Reader interface {
 func (d *Data) FindByName(name string) *DataEntry {
 	for _, entry := range d.Entries {
 		if entry.Name == name {
-			return &entry
+			return entry
 		}
 	}
 	return nil
@@ -36,7 +36,7 @@ func (d *Data) AddOrUpdateEntry(entry *DataEntry) {
 			return
 		}
 	}
-	d.Entries = append(d.Entries, *entry)
+	d.Entries = append(d.Entries, entry)
 }
 
 func (d *Data) RemoveByName(name string) {

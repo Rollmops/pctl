@@ -17,7 +17,7 @@ func TestWriteReadCsv(t *testing.T) {
 	csvWriter := persistence.NewTestCsvWriter(tmpFile.Name())
 
 	data := &persistence.Data{
-		Entries: []persistence.DataEntry{
+		Entries: []*persistence.DataEntry{
 			{
 				Pid:     1,
 				Name:    "process1",

@@ -19,6 +19,7 @@ func NewCsvWriter() (*CsvWriter, error) {
 		return nil, err
 	}
 	stateFilePath = filepath.Join(stateFilePath, "state.csv")
+	log.Tracef("Creating csv writer with state file path: %s", stateFilePath)
 	return &CsvWriter{stateFilePath: stateFilePath}, nil
 }
 
@@ -33,7 +34,10 @@ func (c *CsvReader) Read() (*Data, error) {
 		return nil, err
 	}
 
-	defer func() { _ = file.Close() }()
+	defer func() {
+		log.Tracef("Closing %s", c.stateFilePath)
+		_ = file.Close()
+	}()
 
 	reader := csv.NewReader(file)
 	records, err := reader.ReadAll()
@@ -41,21 +45,28 @@ func (c *CsvReader) Read() (*Data, error) {
 		return nil, err
 	}
 
-	var data []DataEntry
+	var data []*DataEntry
 	log.Debugf("Reading %d records from state file", len(records))
 	for _, record := range records {
-		pid, err := strconv.Atoi(record[1])
+		data, err = _readAndAppendCsvRecord(data, record)
 		if err != nil {
 			return nil, err
 		}
-
-		var command []string
-		err = json.Unmarshal([]byte(record[2]), &command)
-		if err != nil {
-			return nil, err
-		}
-		data = append(data, DataEntry{Name: record[0], Pid: int32(pid), Command: command})
 	}
-
 	return &Data{Entries: data}, nil
+}
+
+func _readAndAppendCsvRecord(data []*DataEntry, record []string) ([]*DataEntry, error) {
+	log.Tracef("Reading csv record %v", record)
+	pid, err := strconv.Atoi(record[1])
+	if err != nil {
+		return nil, err
+	}
+	var command []string
+	err = json.Unmarshal([]byte(record[2]), &command)
+	if err != nil {
+		return nil, err
+	}
+	data = append(data, &DataEntry{Name: record[0], Pid: int32(pid), Command: command})
+	return data, nil
 }

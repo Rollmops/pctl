@@ -8,7 +8,7 @@ import (
 func TestDataHandling(t *testing.T) {
 
 	data := persistence.Data{
-		Entries: []persistence.DataEntry{
+		Entries: []*persistence.DataEntry{
 			{
 				Pid:     100,
 				Name:    "p1",

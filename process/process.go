@@ -5,6 +5,7 @@ import (
 	"github.com/Rollmops/pctl/common"
 	"github.com/Rollmops/pctl/config"
 	"github.com/Rollmops/pctl/stop_strategy"
+	log "github.com/sirupsen/logrus"
 	"os/exec"
 	"time"
 
@@ -59,13 +60,16 @@ func (p *Process) Stop() error {
 		return err
 	}
 	stopStrategy := stop_strategy.NewStopStrategyFromConfig(p.Config.StopStrategy)
-	err = stopStrategy.Stop(p.Config.Name, _process)
-	if err != nil {
-		return err
-	}
-	err = common.WaitUntilTrue(func() bool {
+	return stopStrategy.Stop(p.Config.Name, _process)
+}
+
+func (p *Process) WaitForStop(waitTimeInSeconds int) error {
+	log.Debugf("Waiting %d seconds for stopped process '%s'", waitTimeInSeconds, p.Config.Name)
+	intervalDuration := 100 * time.Millisecond
+	attempts := int(time.Second/intervalDuration) * waitTimeInSeconds
+	err := common.WaitUntilTrue(func() bool {
 		return !p.IsRunning()
-	}, 100*time.Millisecond, 50)
+	}, intervalDuration, uint(attempts))
 	if err != nil {
 		pid, _ := p.Pid()
 		return fmt.Errorf("unable to stop process '%s' on PID %d", p.Config.Name, pid)

@@ -13,11 +13,13 @@ type Context struct {
 	persistenceWriter persistence.Writer
 	persistenceReader persistence.Reader
 	output            output.Output
+	OutputWriter      *os.File
 }
 
 var CurrentContext *Context
 
-func NewContext() (*Context, error) {
+func NewContext(outputWriter *os.File) (*Context, error) {
+	log.Trace("Creating context")
 	persistenceWriter, err := persistence.NewCsvWriter()
 	if err != nil {
 		return nil, err
@@ -29,7 +31,7 @@ func NewContext() (*Context, error) {
 	return &Context{
 		persistenceWriter: persistenceWriter,
 		persistenceReader: persistenceReader,
-		output:            output.NewSimpleConsoleOutput(os.Stdout),
+		OutputWriter:      outputWriter,
 	}, nil
 }
 

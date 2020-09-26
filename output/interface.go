@@ -2,10 +2,12 @@ package output
 
 import (
 	gopsutil "github.com/shirou/gopsutil/process"
+	"os"
 )
 
 type Output interface {
 	Write([]*InfoEntry) error
+	SetWriter(file *os.File)
 }
 
 type InfoEntry struct {

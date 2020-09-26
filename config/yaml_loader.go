@@ -12,12 +12,12 @@ import (
 )
 
 func init() {
-	SuffixConfigLoaderMap["yaml"] = &YamlLoader{}
-	SuffixConfigLoaderMap["yml"] = &YamlLoader{}
+	loader := &YamlLoader{}
+	SuffixConfigLoaderMap["yaml"] = loader
+	SuffixConfigLoaderMap["yml"] = loader
 }
 
-type YamlLoader struct {
-}
+type YamlLoader struct{}
 
 type _rawConfig struct {
 	Includes     []string

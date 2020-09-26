@@ -12,12 +12,10 @@ import (
 
 func init() {
 	FormatMap["json"] = &JsonConsoleOutput{
-		writer: os.Stdout,
 		indent: "  ",
 		flat:   false,
 	}
 	FormatMap["json_flat"] = &JsonConsoleOutput{
-		writer: os.Stdout,
 		indent: "",
 		flat:   true,
 	}
@@ -52,6 +50,10 @@ type JsonInfoEntry struct {
 	StoppedUnexpectedly  bool         `json:"stoppedUnexpectedly"`
 	ConfigCommandChanged bool         `json:"configCommandChanged"`
 	Info                 *RunningInfo `json:"info"`
+}
+
+func (j *JsonConsoleOutput) SetWriter(writer *os.File) {
+	j.writer = writer
 }
 
 func (j *JsonConsoleOutput) Write(infoEntries []*InfoEntry) error {
