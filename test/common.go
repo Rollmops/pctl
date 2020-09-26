@@ -2,7 +2,6 @@ package test
 
 import (
 	"bytes"
-	"github.com/Rollmops/pctl/app"
 	gopsutil "github.com/shirou/gopsutil/process"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -12,9 +11,18 @@ import (
 )
 
 func init() {
-	cwd, _ := os.Getwd()
-	configPath := path.Join(cwd, "..", "fixtures", "integration.yaml")
-	_ = os.Setenv("PCTL_CONFIG_PATH", configPath)
+	_ = SetConfigEnvPath("integration.yaml")
+}
+
+func SetConfigEnvPath(p ...string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	pathAsList := []string{cwd, "..", "fixtures"}
+	pathAsList = append(pathAsList, p...)
+	configPath := path.Join(pathAsList...)
+	return os.Setenv("PCTL_CONFIG_PATH", configPath)
 }
 
 func IsCommandRunning(command string) bool {
@@ -38,21 +46,13 @@ func CaptureLogOutput(f func()) string {
 	return buf.String()
 }
 
-func StartAppAndGetStdout(args []string) (string, error) {
+func CaptureStdout(f func()) string {
 	r, w, _ := os.Pipe()
-
-	pctlApp := app.CreateCliApp(w)
-	err := pctlApp.Run(args)
-	if err != nil {
-		return "", err
-	}
-	err = w.Close()
-	if err != nil {
-		return "", err
-	}
-	out, err := ioutil.ReadAll(r)
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w
+	f()
+	_ = w.Close()
+	out, _ := ioutil.ReadAll(r)
+	return string(out)
 }

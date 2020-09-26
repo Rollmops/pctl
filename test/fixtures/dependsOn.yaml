@@ -1,0 +1,6 @@
+processes:
+  - name: p1
+    cmd: [sleep, 3456]
+    dependsOn: [p2]
+  - name: p2
+    cmd: [sleep, 4567]

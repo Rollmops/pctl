@@ -18,7 +18,7 @@ type Context struct {
 
 var CurrentContext *Context
 
-func NewContext(outputWriter *os.File) (*Context, error) {
+func NewContext() (*Context, error) {
 	log.Trace("Creating context")
 	persistenceWriter, err := persistence.NewCsvWriter()
 	if err != nil {
@@ -31,7 +31,7 @@ func NewContext(outputWriter *os.File) (*Context, error) {
 	return &Context{
 		persistenceWriter: persistenceWriter,
 		persistenceReader: persistenceReader,
-		OutputWriter:      outputWriter,
+		OutputWriter:      os.Stdout,
 	}, nil
 }
 
@@ -43,9 +43,9 @@ func (c *Context) Initialize() error {
 	log.Debugf("Using config path: %s", configPath)
 	configLoader := config.GetLoaderFromPath(configPath)
 	c.config, err = configLoader.Load(configPath)
-	log.Debugf("Loaded %d process configuration(s)", len(c.config.Processes))
 	if err != nil {
 		return err
 	}
+	log.Debugf("Loaded %d process configuration(s)", len(c.config.Processes))
 	return nil
 }

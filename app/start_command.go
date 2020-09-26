@@ -9,14 +9,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func StartCommand(names []string) error {
-	/*
-		- get persistence data entry for name
-		  - if not present (assume not running), start process
-		  - if present, check state
-		    - state: running -> do nothing (already running)
-			- state: stopped unexpected -> start process
-	*/
+func StartCommand(names []string, all bool) error {
+
+	if all {
+		log.Debug("Starting all processes")
+		for _, c := range CurrentContext.config.Processes {
+			names = append(names, c.Name)
+		}
+	}
+	log.Tracef("Starting processes: %v", names)
 	data, err := CurrentContext.persistenceReader.Read()
 	if err != nil {
 		return nil
@@ -26,48 +27,69 @@ func StartCommand(names []string) error {
 		if processConfig == nil {
 			return fmt.Errorf("unable to find process '%s' in config", name)
 		}
-		dataEntry := data.FindByName(processConfig.Name)
-		if dataEntry == nil {
-			// TODO warn if we find a process with the same cmdline
-			_process, err := _startProcess(processConfig)
-			if err != nil {
-				return err
-			}
-			dataEntry, err = persistence.NewDataEntryFromProcess(_process)
-			if err != nil {
-				return err
-			}
-		} else {
-			pidExists, err := gopsutil.PidExists(dataEntry.Pid)
-			if err != nil {
-				return err
-			}
-			if !pidExists {
-				log.Warnf("Expected '%s' as running ... starting it", name)
-				_process, err := _startProcess(processConfig)
-				if err != nil {
-					return err
-				}
-				dataEntry, err = persistence.NewDataEntryFromProcess(_process)
-				if err != nil {
-					return err
-				}
-			} else {
-				log.Infof("Process '%s' is already running", name)
-			}
+		err = _startProcess(processConfig, data)
+		if err != nil {
+			return err
 		}
-		data.AddOrUpdateEntry(dataEntry)
 	}
-
-	return CurrentContext.persistenceWriter.Write(data)
+	return nil
 }
 
-func _startProcess(processConfig *config.ProcessConfig) (*process.Process, error) {
-	log.Infof("Starting process '%s'", processConfig.Name)
-	_process := &process.Process{Config: processConfig}
-	err := _process.Start()
-	if err != nil {
-		return nil, err
+/*
+	- get persistence data entry for name
+	  - if not present (assume not running), start process
+	  - if present, check state
+	    - state: running -> do nothing (already running)
+		- state: stopped unexpected -> start process
+*/
+func _startProcess(processConfig *config.ProcessConfig, data *persistence.Data) error {
+	log.Debugf("Starting process '%s'", processConfig.Name)
+	dataEntry := data.FindByName(processConfig.Name)
+	var startNeeded bool
+	if dataEntry != nil {
+		log.Tracef("persistence data entry was found")
+		pidExists, err := gopsutil.PidExists(dataEntry.Pid)
+		if err != nil {
+			return err
+		}
+		if !pidExists {
+			log.Tracef("Pid %d is running for persistence data entry", dataEntry.Pid)
+			log.Warnf("Expected not running process '%s' as running ... starting it", processConfig.Command)
+			startNeeded = true
+		} else {
+			startNeeded = false
+			fmt.Printf("Process '%s' is already running\n", processConfig.Name)
+		}
+	} else {
+		startNeeded = true
 	}
-	return _process, nil
+	log.Tracef("Start needed: %v", startNeeded)
+	if len(processConfig.DependsOn) > 0 {
+		fmt.Println("Starting dependencies")
+	}
+	for _, dependencyName := range processConfig.DependsOn {
+		dc := CurrentContext.config.FindByName(dependencyName)
+		if dc == nil {
+			return fmt.Errorf("unable to find dependencyName '%s' for process '%s'", dependencyName, processConfig.Name)
+		}
+		err := _startProcess(dc, data)
+		if err != nil {
+			return err
+		}
+	}
+	if startNeeded {
+		fmt.Printf("Starting process '%s'\n", processConfig.Name)
+		_process := &process.Process{Config: processConfig}
+		err := _process.Start()
+		if err != nil {
+			return nil
+		}
+		dataEntry, err = persistence.NewDataEntryFromProcess(_process)
+		data.AddOrUpdateEntry(dataEntry)
+		err = CurrentContext.persistenceWriter.Write(data)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

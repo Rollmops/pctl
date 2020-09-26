@@ -1,0 +1,9 @@
+processes:
+- name: Sleep
+  cmd: [sleep, infinity]
+  stopStrategy:
+    script:
+      path: ~/stop_script.sh
+      args: [huhu, was geht]
+      forwardStdout: true
+      forwardStderr: true

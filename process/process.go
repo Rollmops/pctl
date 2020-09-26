@@ -51,7 +51,6 @@ func (p *Process) Start() error {
 
 	p.cmd = exec.Command(name, args...)
 	return p.cmd.Start()
-
 }
 
 func (p *Process) Stop() error {

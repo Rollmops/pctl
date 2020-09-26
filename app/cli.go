@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/Rollmops/pctl/output"
+	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func CreateCliApp(outputFile *os.File) *cli.App {
+func CreateCliApp() *cli.App {
 	return &cli.App{
 		Before: func(c *cli.Context) error {
 			logLevelString := c.String("loglevel")
@@ -21,7 +22,9 @@ func CreateCliApp(outputFile *os.File) *cli.App {
 			}
 			log.SetLevel(level)
 
-			CurrentContext, err = NewContext(outputFile)
+			color.NoColor = c.Bool("no-color-output")
+
+			CurrentContext, err = NewContext()
 			if err != nil {
 				return err
 			}
@@ -41,6 +44,12 @@ func CreateCliApp(outputFile *os.File) *cli.App {
 				Aliases: []string{"L"},
 				Usage:   "level: trace,debug,info,warn,warning,error,fatal,panic",
 			},
+			&cli.BoolFlag{
+				Name:    "no-color-output",
+				Value:   false,
+				EnvVars: []string{"PCTL_NO_COLOR_OUTPUT"},
+				Usage:   "do not use colors output",
+			},
 		},
 		Commands: []*cli.Command{
 			{
@@ -54,11 +63,24 @@ func CreateCliApp(outputFile *os.File) *cli.App {
 				Name:      "start",
 				Usage:     "start process(es)",
 				ArgsUsage: "a list of process names",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "all",
+						Usage: "start all processes",
+						Value: false,
+					},
+				},
 				Action: func(c *cli.Context) error {
-					if c.NArg() == 0 {
+					if c.NArg() == 0 && !c.Bool("all") {
 						return fmt.Errorf("missing process names")
 					}
-					return StartCommand(c.Args().Slice())
+					return StartCommand(c.Args().Slice(), c.Bool("all"))
+				},
+				Before: func(context *cli.Context) error {
+					if context.NArg() > 0 && context.Bool("all") {
+						return fmt.Errorf("can not use '--all' with process name specification")
+					}
+					return nil
 				},
 			},
 			{

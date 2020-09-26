@@ -5,9 +5,12 @@ import (
 	"github.com/Rollmops/pctl/config"
 	"github.com/Rollmops/pctl/persistence"
 	"github.com/Rollmops/pctl/process"
+	"github.com/fatih/color"
 )
 
 var FormatMap = map[string]Output{}
+
+var Green = color.New(color.FgGreen).SprintFunc()
 
 func CreateInfoEntries(persistenceData *persistence.Data, processConfigs []*config.ProcessConfig) ([]*InfoEntry, error) {
 	var infoEntries []*InfoEntry
