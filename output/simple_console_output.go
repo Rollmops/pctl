@@ -27,7 +27,8 @@ func (o *SimpleConsoleOutput) Write(infoEntries []*InfoEntry) error {
 			return err
 		}
 
-		line := fmt.Sprintf("%s: %s, running: %o, dirty: %o\n", e.Name, string(b), e.IsRunning, e.ConfigCommandChanged)
+		line := fmt.Sprintf("%s: %s, running: %v, dirty: %v\n",
+			e.Name, string(b), e.IsRunning, e.ConfigCommandChanged)
 		if _, err := o.writer.Write([]byte(line)); err != nil {
 			return err
 		}

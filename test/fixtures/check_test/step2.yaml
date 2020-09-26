@@ -1,0 +1,3 @@
+processes:
+  - name: Test2
+    cmd: [sleep, 1234]

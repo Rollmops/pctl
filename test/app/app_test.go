@@ -16,7 +16,7 @@ func TestStartStopCommand(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be running")
 
-	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "stop", "Test1"})
+	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "stop", "--nowait", "Test1"})
 	assert.NoError(t, err)
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be stopped")
 }

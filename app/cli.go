@@ -25,7 +25,11 @@ func CreateCliApp(outputFile *os.File) *cli.App {
 			if err != nil {
 				return err
 			}
-			return CurrentContext.Initialize()
+			err = CurrentContext.Initialize()
+			if err != nil {
+				return err
+			}
+			return CheckPersistenceConfigDiscrepancy()
 		},
 		Name:  "pctl",
 		Usage: "process control",
