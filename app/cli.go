@@ -12,6 +12,13 @@ import (
 )
 
 func CreateCliApp() *cli.App {
+	beforeAllCheckFunc := func(context *cli.Context) error {
+		if context.NArg() > 0 && context.Bool("all") {
+			return fmt.Errorf("can not use '--all' with process name specification")
+		}
+		return nil
+	}
+
 	return &cli.App{
 		Before: func(c *cli.Context) error {
 			logLevelString := c.String("loglevel")
@@ -60,6 +67,30 @@ func CreateCliApp() *cli.App {
 				},
 			},
 			{
+				Name:      "sync",
+				Usage:     "synchronize running processes that are not yet tracked",
+				ArgsUsage: "a list of process names",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "strategy",
+						Usage: "sync strategy to use: exact,ends-with",
+						Value: "exact",
+					},
+					&cli.BoolFlag{
+						Name:  "all",
+						Usage: "synchronize all processes",
+						Value: false,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					if c.NArg() == 0 && !c.Bool("all") {
+						return fmt.Errorf("missing process names")
+					}
+					return SyncCommand(c.Args().Slice(), c.Bool("all"), c.String("strategy"))
+				},
+				Before: beforeAllCheckFunc,
+			},
+			{
 				Name:      "start",
 				Usage:     "start process(es)",
 				ArgsUsage: "a list of process names",
@@ -76,12 +107,7 @@ func CreateCliApp() *cli.App {
 					}
 					return StartCommand(c.Args().Slice(), c.Bool("all"))
 				},
-				Before: func(context *cli.Context) error {
-					if context.NArg() > 0 && context.Bool("all") {
-						return fmt.Errorf("can not use '--all' with process name specification")
-					}
-					return nil
-				},
+				Before: beforeAllCheckFunc,
 			},
 			{
 				Name:      "stop",

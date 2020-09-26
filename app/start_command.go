@@ -13,9 +13,7 @@ func StartCommand(names []string, all bool) error {
 
 	if all {
 		log.Debug("Starting all processes")
-		for _, c := range CurrentContext.config.Processes {
-			names = append(names, c.Name)
-		}
+		names = CurrentContext.config.GetAllProcessNames()
 	}
 	log.Tracef("Starting processes: %v", names)
 	data, err := CurrentContext.persistenceReader.Read()

@@ -6,31 +6,25 @@ import (
 	gopsutil "github.com/shirou/gopsutil/process"
 	log "github.com/sirupsen/logrus"
 	"sort"
-	"time"
+	"strings"
 )
 
 func init() {
-	s := &CommandlinePidRetrieveStrategy{}
-	PidRetrieveStrategies["command"] = s
-	PidRetrieveStrategies["cmd"] = s
-	PidRetrieveStrategies["cmdline"] = s
+	s := &CommandlineEndsWithPidRetrieveStrategy{}
+	PidRetrieveStrategies["command_ends_with"] = s
+	PidRetrieveStrategies["cmd_ends_with"] = s
+	PidRetrieveStrategies["cmdline_ends_with"] = s
 }
 
-var (
-	CommandlinePidRetrieveStrategyWaitTime      = 100 * time.Millisecond
-	CommandlinePidRetrieveStrategyAttempts uint = 10
-)
+type CommandlineEndsWithPidRetrieveStrategy struct{}
 
-type CommandlinePidRetrieveStrategy struct{}
-
-func (s *CommandlinePidRetrieveStrategy) Retrieve(p *Process) (int32, error) {
-	log.Tracef("Retrieving pid from command for %s", p.Config.Command)
+func (s *CommandlineEndsWithPidRetrieveStrategy) Retrieve(p *Process) (int32, error) {
+	log.Tracef("Retrieving pid from command end for %s", p.Config.Command)
 	var pid int32
 
 	if err := common.WaitUntilTrue(func() bool {
 		var err error
-		log.Tracef("Trying to find pid for command %v", p.Config.Command)
-		pid, err = _findPidForCommandline(p.Config.Command)
+		pid, err = _findPidForEndOfCommandline(p.Config.Command)
 		if err != nil || pid == -1 {
 			return false
 		}
@@ -42,7 +36,7 @@ func (s *CommandlinePidRetrieveStrategy) Retrieve(p *Process) (int32, error) {
 	return pid, nil
 }
 
-func _findPidForCommandline(command []string) (int32, error) {
+func _findPidForEndOfCommandline(command []string) (int32, error) {
 	processes, err := gopsutil.Processes()
 	if err != nil {
 		return -1, err
@@ -58,7 +52,8 @@ func _findPidForCommandline(command []string) (int32, error) {
 		if err != nil {
 			return -1, err
 		}
-		if common.CompareStringSlices(processCommand, command) {
+		if len(command) > 0 && len(processCommand) > 0 &&
+			strings.HasSuffix(strings.Join(processCommand, " "), strings.Join(command, " ")) {
 			return _p.Pid, nil
 		}
 	}
