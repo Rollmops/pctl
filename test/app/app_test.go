@@ -26,14 +26,14 @@ func TestStartWithDependencies(t *testing.T) {
 	pctlApp := app.CreateCliApp()
 
 	out := test.CaptureStdout(func() {
-		assert.NoError(t, pctlApp.Run([]string{"pctl", "start", "p1"}))
+		assert.NoError(t, pctlApp.Run([]string{"pctl", "--no-color-output", "start", "p1"}))
 	})
 
 	assert.True(t, test.IsCommandRunning("sleep 3456"), "'sleep 3456' should be running")
 	assert.True(t, test.IsCommandRunning("sleep 4567"), "'sleep 4567' should be running")
 
 	assert.Equal(t, out, `Starting dependencies
-Starting process 'p2'
-Starting process 'p1'
+Starting process 'p2' ... Ok
+Starting process 'p1' ... Ok
 `)
 }
