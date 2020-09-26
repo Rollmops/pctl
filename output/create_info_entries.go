@@ -18,6 +18,7 @@ func CreateInfoEntries(persistenceData *persistence.Data, processConfigs []*conf
 
 		if e := persistenceData.FindByName(processConfig.Name); e != nil {
 			infoEntry.RunningCommand = e.Command
+			infoEntry.Comment = e.Comment
 			p := process.Process{Config: processConfig}
 			err := p.SynchronizeWithPid(e.Pid)
 			if err != nil {

@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func StartCommand(names []string, all bool) error {
+func StartCommand(names []string, all bool, comment string) error {
 
 	if all {
 		log.Debug("Starting all processes")
@@ -26,7 +26,7 @@ func StartCommand(names []string, all bool) error {
 		if processConfig == nil {
 			return fmt.Errorf("unable to find process '%s' in config", name)
 		}
-		err = _startProcess(processConfig, data)
+		err = _startProcess(processConfig, data, comment)
 		if err != nil {
 			return err
 		}
@@ -41,7 +41,7 @@ func StartCommand(names []string, all bool) error {
 	    - state: running -> do nothing (already running)
 		- state: stopped unexpected -> start process
 */
-func _startProcess(processConfig *config.ProcessConfig, data *persistence.Data) error {
+func _startProcess(processConfig *config.ProcessConfig, data *persistence.Data, comment string) error {
 	log.Debugf("Starting process '%s'", processConfig.Name)
 	dataEntry := data.FindByName(processConfig.Name)
 	var startNeeded bool
@@ -71,7 +71,7 @@ func _startProcess(processConfig *config.ProcessConfig, data *persistence.Data) 
 		if dc == nil {
 			return fmt.Errorf("unable to find dependencyName '%s' for process '%s'", dependencyName, processConfig.Name)
 		}
-		err := _startProcess(dc, data)
+		err := _startProcess(dc, data, comment)
 		if err != nil {
 			return err
 		}
@@ -86,6 +86,10 @@ func _startProcess(processConfig *config.ProcessConfig, data *persistence.Data) 
 					return err
 				}
 				dataEntry, err = persistence.NewDataEntryFromProcess(_process)
+				if err != nil {
+					return err
+				}
+				dataEntry.Comment = comment
 				data.AddOrUpdateEntry(dataEntry)
 				return CurrentContext.persistenceWriter.Write(data)
 			})

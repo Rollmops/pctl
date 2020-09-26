@@ -49,7 +49,7 @@ func (c *CsvWriter) Write(data *Data) error {
 		if err != nil {
 			return err
 		}
-		err = writer.Write([]string{d.Name, strconv.Itoa(int(d.Pid)), string(commandString)})
+		err = writer.Write([]string{d.Name, strconv.Itoa(int(d.Pid)), string(commandString), d.Comment})
 		if err != nil {
 			return err
 		}

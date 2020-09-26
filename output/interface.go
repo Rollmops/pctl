@@ -12,6 +12,7 @@ type Output interface {
 
 type InfoEntry struct {
 	Name           string
+	Comment        string
 	ConfigCommand  []string
 	RunningCommand []string
 	// simple flag if process is running

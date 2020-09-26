@@ -10,6 +10,7 @@ type DataEntry struct {
 	Pid     int32
 	Name    string
 	Command []string
+	Comment string
 }
 
 type Writer interface {
@@ -39,6 +40,7 @@ func (d *Data) AddOrUpdateEntry(entry *DataEntry) {
 			log.Tracef("Updating persistence data entry %v", entry)
 			d.Entries[index].Pid = entry.Pid
 			d.Entries[index].Command = entry.Command
+			d.Entries[index].Comment = entry.Comment
 			return
 		}
 	}

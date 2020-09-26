@@ -67,6 +67,6 @@ func _readAndAppendCsvRecord(data []*DataEntry, record []string) ([]*DataEntry, 
 	if err != nil {
 		return nil, err
 	}
-	data = append(data, &DataEntry{Name: record[0], Pid: int32(pid), Command: command})
+	data = append(data, &DataEntry{Name: record[0], Pid: int32(pid), Command: command, Comment: record[3]})
 	return data, nil
 }

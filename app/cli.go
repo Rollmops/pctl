@@ -100,12 +100,16 @@ func CreateCliApp() *cli.App {
 						Usage: "start all processes",
 						Value: false,
 					},
+					&cli.StringFlag{
+						Name:  "comment",
+						Usage: "add comment",
+					},
 				},
 				Action: func(c *cli.Context) error {
 					if c.NArg() == 0 && !c.Bool("all") {
 						return fmt.Errorf("missing process names")
 					}
-					return StartCommand(c.Args().Slice(), c.Bool("all"))
+					return StartCommand(c.Args().Slice(), c.Bool("all"), c.String("comment"))
 				},
 				Before: beforeAllCheckFunc,
 			},
