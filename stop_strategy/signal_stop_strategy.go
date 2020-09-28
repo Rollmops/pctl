@@ -19,7 +19,7 @@ type SignalStopStrategy struct {
 	config.SignalStopStrategyConfig
 }
 
-func (s *SignalStopStrategy) Stop(_ string, p *gopsutil.Process) error {
+func (s *SignalStopStrategy) Stop(_ *config.ProcessConfig, p *gopsutil.Process) error {
 	if s.SignalString != "" {
 		signal, prs := _signalNameMapping[s.SignalString]
 		if prs == false {

@@ -13,12 +13,12 @@ type ScriptStopStrategy struct {
 	config.ScriptStopStrategyConfig
 }
 
-func (s *ScriptStopStrategy) Stop(name string, p *gopsutil.Process) error {
+func (s *ScriptStopStrategy) Stop(c *config.ProcessConfig, p *gopsutil.Process) error {
 	stopScriptPath, err := common.ExpandPath(s.Path)
 	if err != nil {
 		return err
 	}
-	args := []string{name, strconv.Itoa(int(p.Pid))}
+	args := []string{c.Name, strconv.Itoa(int(p.Pid))}
 	args = append(args, s.Args...)
 	cmd := exec.Command(stopScriptPath, args...)
 	if s.ForwardStdout {

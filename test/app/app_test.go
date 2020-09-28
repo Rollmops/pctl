@@ -32,8 +32,7 @@ func TestStartWithDependencies(t *testing.T) {
 	assert.True(t, test.IsCommandRunning("sleep 3456"), "'sleep 3456' should be running")
 	assert.True(t, test.IsCommandRunning("sleep 4567"), "'sleep 4567' should be running")
 
-	assert.Equal(t, out, `Starting dependencies
-Starting process 'p2' ... Ok
+	assert.Equal(t, out, `Starting dependency 'p2' ... Ok
 Starting process 'p1' ... Ok
 `)
 }

@@ -12,13 +12,6 @@ import (
 )
 
 func CreateCliApp() *cli.App {
-	beforeAllCheckFunc := func(context *cli.Context) error {
-		if context.NArg() > 0 && context.Bool("all") {
-			return fmt.Errorf("can not use '--all' with process name specification")
-		}
-		return nil
-	}
-
 	return &cli.App{
 		Before: func(c *cli.Context) error {
 			logLevelString := c.String("loglevel")
@@ -76,42 +69,24 @@ func CreateCliApp() *cli.App {
 						Usage: "sync strategy to use: exact,ends-with",
 						Value: "exact",
 					},
-					&cli.BoolFlag{
-						Name:  "all",
-						Usage: "synchronize all processes",
-						Value: false,
-					},
 				},
 				Action: func(c *cli.Context) error {
-					if c.NArg() == 0 && !c.Bool("all") {
-						return fmt.Errorf("missing process names")
-					}
-					return SyncCommand(c.Args().Slice(), c.Bool("all"), c.String("strategy"))
+					return SyncCommand(c.Args().Slice(), c.String("strategy"))
 				},
-				Before: beforeAllCheckFunc,
 			},
 			{
 				Name:      "start",
 				Usage:     "start process(es)",
 				ArgsUsage: "a list of process names",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:  "all",
-						Usage: "start all processes",
-						Value: false,
-					},
 					&cli.StringFlag{
 						Name:  "comment",
 						Usage: "add comment",
 					},
 				},
 				Action: func(c *cli.Context) error {
-					if c.NArg() == 0 && !c.Bool("all") {
-						return fmt.Errorf("missing process names")
-					}
-					return StartCommand(c.Args().Slice(), c.Bool("all"), c.String("comment"))
+					return StartCommand(c.Args().Slice(), c.String("comment"))
 				},
-				Before: beforeAllCheckFunc,
 			},
 			{
 				Name:      "stop",
@@ -124,18 +99,12 @@ func CreateCliApp() *cli.App {
 						Usage:   "skip waiting until process stopped",
 						EnvVars: []string{"PCTL_STOP_NO_WAIT"},
 					},
-					&cli.IntFlag{
-						Name:    "wait-time",
-						Value:   5,
-						Usage:   "wait time in seconds",
-						EnvVars: []string{"PCTL_STOP_WAIT_TIME"},
-					},
 				},
 				Action: func(c *cli.Context) error {
 					if c.NArg() == 0 {
 						return fmt.Errorf("missing process names")
 					}
-					return StopCommand(c.Args().Slice(), c.Bool("nowait"), c.Int("wait-time"))
+					return StopCommand(c.Args().Slice(), c.Bool("nowait"))
 				},
 			},
 			{

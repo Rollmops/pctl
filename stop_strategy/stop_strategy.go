@@ -7,16 +7,30 @@ import (
 )
 
 type StopStrategy interface {
-	Stop(string, *gopsutil.Process) error
+	Stop(*config.ProcessConfig, *gopsutil.Process) error
 }
 
 func NewStopStrategyFromConfig(c *config.StopStrategyConfig) StopStrategy {
 	if c == nil {
-		return &SignalStopStrategy{SignalStopStrategyConfig: config.SignalStopStrategyConfig{Signal: syscall.SIGTERM}}
+		return _getDefaultStopStrategy()
 	}
 	if c.Script != nil {
-		return &ScriptStopStrategy{ScriptStopStrategyConfig: *c.Script}
+		return &ScriptStopStrategy{
+			ScriptStopStrategyConfig: *c.Script,
+		}
+	} else if c.Signal != nil {
+		return &SignalStopStrategy{
+			SignalStopStrategyConfig: *c.Signal,
+		}
 	} else {
-		return &SignalStopStrategy{SignalStopStrategyConfig: *c.Signal}
+		return _getDefaultStopStrategy()
+	}
+}
+
+func _getDefaultStopStrategy() StopStrategy {
+	return &SignalStopStrategy{
+		SignalStopStrategyConfig: config.SignalStopStrategyConfig{
+			Signal: syscall.SIGTERM,
+		},
 	}
 }

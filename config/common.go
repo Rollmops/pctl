@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/minio/minio/pkg/wildcard"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path"
@@ -22,12 +23,42 @@ func (c *Config) FindByName(name string) *ProcessConfig {
 	return nil
 }
 
-func (c *Config) GetAllProcessNames() []string {
-	var names []string
-	for _, c := range c.Processes {
-		names = append(names, c.Name)
+func (c *Config) CollectProcessConfigsByNameSpecifiers(nameSpecifiers []string, allIfNoSpecifiers bool) []*ProcessConfig {
+	if len(nameSpecifiers) == 0 && allIfNoSpecifiers {
+		return c.Processes
 	}
-	return names
+	log.Tracef("Collecting process configs for name specifiers: %v", nameSpecifiers)
+	var returnConfigs []*ProcessConfig
+	for _, nameSpecifier := range nameSpecifiers {
+		for _, p := range c.Processes {
+			if wildcard.Match(nameSpecifier, p.Name) && !_isInProcessConfigList(p.Name, returnConfigs) {
+				returnConfigs = append(returnConfigs, p)
+			}
+		}
+	}
+	log.Tracef("Found %d process configs for name specifiers: %v", len(returnConfigs), nameSpecifiers)
+	return returnConfigs
+}
+
+func (c *Config) GetAllDependentOf(name string) []*ProcessConfig {
+	var dependentReturns []*ProcessConfig
+	for _, p := range c.Processes {
+		for _, d := range p.DependsOn {
+			if d == name && !_isInProcessConfigList(name, dependentReturns) {
+				dependentReturns = append(dependentReturns, p)
+			}
+		}
+	}
+	return dependentReturns
+}
+
+func _isInProcessConfigList(name string, processConfigs []*ProcessConfig) bool {
+	for _, p := range processConfigs {
+		if name == p.Name {
+			return true
+		}
+	}
+	return false
 }
 
 func GetConfigPath() (string, error) {

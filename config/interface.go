@@ -9,8 +9,10 @@ type Loader interface {
 }
 
 type StopStrategyConfig struct {
-	Script *ScriptStopStrategyConfig
-	Signal *SignalStopStrategyConfig
+	Script       *ScriptStopStrategyConfig
+	Signal       *SignalStopStrategyConfig
+	MaxWaitTime  string
+	IntervalTime string
 }
 
 type SignalStopStrategyConfig struct {
@@ -29,7 +31,7 @@ type ProcessConfig struct {
 	Name                    string
 	Command                 []string            `yaml:"cmd"`
 	PidRetrieveStrategyName string              `yaml:"pidStrategy"`
-	StopStrategy            *StopStrategyConfig `yaml:"stopStrategy"`
+	StopStrategy            *StopStrategyConfig `yaml:"stop"`
 	DependsOn               []string            `yaml:"dependsOn"`
 }
 
