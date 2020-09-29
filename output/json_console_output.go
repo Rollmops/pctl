@@ -15,7 +15,7 @@ func init() {
 		indent: "  ",
 		flat:   false,
 	}
-	FormatMap["json_flat"] = &JsonConsoleOutput{
+	FormatMap["json-flat"] = &JsonConsoleOutput{
 		indent: "",
 		flat:   true,
 	}
