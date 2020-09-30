@@ -1,4 +1,6 @@
-# pctl
+# PCTL
+
+[![Coverage Status](https://coveralls.io/repos/github/Rollmops/pctl/badge.svg?branch=master)](https://coveralls.io/github/Rollmops/pctl?branch=master)
 
 ## Ideas
 
