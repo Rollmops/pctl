@@ -10,10 +10,10 @@ func InfoCommand(names []string, format string) error {
 	o := output.FormatMap[format]
 	o.SetWriter(CurrentContext.OutputWriter)
 	if o == nil {
-		return fmt.Errorf("unknown output format: '%s'", format)
+		return fmt.Errorf("unknown Output format: '%s'", format)
 	}
 
-	persistenceData, err := CurrentContext.persistenceReader.Read()
+	persistenceData, err := CurrentContext.PersistenceReader.Read()
 	if err != nil {
 		return err
 	}
@@ -21,16 +21,16 @@ func InfoCommand(names []string, format string) error {
 	var filteredProcessConfigs []*config.ProcessConfig
 	if len(names) > 0 {
 		for _, name := range names {
-			c := CurrentContext.config.FindByName(name)
+			c := CurrentContext.Config.FindByName(name)
 			if c == nil {
 				return fmt.Errorf("unble to find process '%s'", name)
 			}
 			filteredProcessConfigs = append(filteredProcessConfigs, c)
 		}
 	} else {
-		filteredProcessConfigs = CurrentContext.config.Processes
+		filteredProcessConfigs = CurrentContext.Config.Processes
 	}
-	infoEntries, err := output.CreateInfoEntries(persistenceData, CurrentContext.config.Processes)
+	infoEntries, err := output.CreateInfoEntries(persistenceData, CurrentContext.Config.Processes)
 	if err != nil {
 		return err
 	}

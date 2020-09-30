@@ -1,8 +1,9 @@
-package persistence_test
+package csv_test
 
 import (
 	"github.com/Rollmops/pctl/common"
 	"github.com/Rollmops/pctl/persistence"
+	"github.com/Rollmops/pctl/persistence/csv"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -14,7 +15,7 @@ func TestWriteReadCsv(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmpFile.Name())
-	csvWriter := persistence.NewTestCsvWriter(tmpFile.Name())
+	csvWriter := csv.NewTestCsvWriter(tmpFile.Name())
 
 	data := &persistence.Data{
 		Entries: []*persistence.DataEntry{
@@ -36,7 +37,7 @@ func TestWriteReadCsv(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	csvReader := persistence.NewTestCsvReader(tmpFile.Name())
+	csvReader := csv.NewTestCsvReader(tmpFile.Name())
 
 	readData, err := csvReader.Read()
 	if err != nil {

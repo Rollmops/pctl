@@ -12,16 +12,16 @@ import (
 )
 
 func StopCommand(names []string, noWait bool) error {
-	processConfigs := CurrentContext.config.CollectProcessConfigsByNameSpecifiers(names, false)
+	processConfigs := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, false)
 	if len(processConfigs) == 0 {
-		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
+		return fmt.Errorf("no matching process Config for name specifiers: %s", strings.Join(names, ", "))
 	}
-	trackedData, err := CurrentContext.persistenceReader.Read()
+	trackedData, err := CurrentContext.PersistenceReader.Read()
 	if err != nil {
 		return err
 	}
 	for _, processConfig := range processConfigs {
-		for _, dependentOf := range CurrentContext.config.GetAllDependentOf(processConfig.Name) {
+		for _, dependentOf := range CurrentContext.Config.GetAllDependentOf(processConfig.Name) {
 			if dependentOf.Name != processConfig.Name {
 				_ = output.PrintMessageAndStatus(fmt.Sprintf("Stopping dependency process '%s' of '%s", dependentOf.Name, processConfig.Name),
 					func() output.StatusReturn {
@@ -29,7 +29,7 @@ func StopCommand(names []string, noWait bool) error {
 					},
 				)
 				trackedData.RemoveByName(dependentOf.Name)
-				err = CurrentContext.persistenceWriter.Write(trackedData)
+				err = CurrentContext.PersistenceWriter.Write(trackedData)
 				if err != nil {
 					return err
 				}
@@ -41,7 +41,7 @@ func StopCommand(names []string, noWait bool) error {
 			},
 		)
 		trackedData.RemoveByName(processConfig.Name)
-		err = CurrentContext.persistenceWriter.Write(trackedData)
+		err = CurrentContext.PersistenceWriter.Write(trackedData)
 		if err != nil {
 			return err
 		}

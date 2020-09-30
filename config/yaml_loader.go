@@ -39,16 +39,16 @@ func (l *YamlLoader) Load(path string) (*Config, error) {
 		return nil, err
 	}
 
-	config := Config{
+	_config := Config{
 		Processes: rawConfig.Processes,
 	}
 
-	err = loadIncludes(path, rawConfig.Includes, &config)
+	err = loadIncludes(path, rawConfig.Includes, &_config)
 	if err != nil {
 		return nil, err
 	}
-	err = config.Validate()
-	return &config, err
+	err = _config.Validate()
+	return &_config, err
 }
 
 func loadIncludes(baseConfigPath string, includes []string, config *Config) error {

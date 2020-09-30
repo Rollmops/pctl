@@ -1,6 +1,8 @@
 package process
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func init() {
 	PidRetrieveStrategies[""] = &DefaultPidRetrieveStrategy{}

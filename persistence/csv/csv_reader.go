@@ -1,8 +1,9 @@
-package persistence
+package csv
 
 import (
 	"encoding/csv"
 	"encoding/json"
+	"github.com/Rollmops/pctl/persistence"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
@@ -14,7 +15,7 @@ type CsvReader struct {
 }
 
 func NewCsvWriter() (*CsvWriter, error) {
-	stateFilePath, err := GetStateFilePath()
+	stateFilePath, err := persistence.GetStateFilePath()
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +28,7 @@ func NewTestCsvWriter(stateFilePath string) CsvWriter {
 	return CsvWriter{stateFilePath: stateFilePath}
 }
 
-func (c *CsvReader) Read() (*Data, error) {
+func (c *CsvReader) Read() (*persistence.Data, error) {
 	log.Debugf("Opening %s", c.stateFilePath)
 	file, err := os.OpenFile(c.stateFilePath, os.O_RDONLY|os.O_CREATE, 0755)
 	if err != nil {
@@ -45,7 +46,7 @@ func (c *CsvReader) Read() (*Data, error) {
 		return nil, err
 	}
 
-	var data []*DataEntry
+	var data []*persistence.DataEntry
 	log.Debugf("Reading %d records from state file", len(records))
 	for _, record := range records {
 		data, err = _readAndAppendCsvRecord(data, record)
@@ -53,10 +54,10 @@ func (c *CsvReader) Read() (*Data, error) {
 			return nil, err
 		}
 	}
-	return &Data{Entries: data}, nil
+	return &persistence.Data{Entries: data}, nil
 }
 
-func _readAndAppendCsvRecord(data []*DataEntry, record []string) ([]*DataEntry, error) {
+func _readAndAppendCsvRecord(data []*persistence.DataEntry, record []string) ([]*persistence.DataEntry, error) {
 	log.Tracef("Reading csv record %v", record)
 	pid, err := strconv.Atoi(record[1])
 	if err != nil {
@@ -67,6 +68,6 @@ func _readAndAppendCsvRecord(data []*DataEntry, record []string) ([]*DataEntry, 
 	if err != nil {
 		return nil, err
 	}
-	data = append(data, &DataEntry{Name: record[0], Pid: int32(pid), Command: command, Comment: record[3]})
+	data = append(data, &persistence.DataEntry{Name: record[0], Pid: int32(pid), Command: command, Comment: record[3]})
 	return data, nil
 }

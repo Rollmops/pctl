@@ -1,19 +1,18 @@
 package config_test
 
 import (
+	"github.com/Rollmops/pctl/config"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
-
-	"github.com/Rollmops/pctl/config"
 )
 
 var testDataDir string
 
 func init() {
 	cwd, _ := os.Getwd()
-	testDataDir = path.Join(cwd, "..", "fixtures")
+	testDataDir = path.Join(cwd, "fixtures")
 	_ = os.Setenv("TEST_DATA_DIR", testDataDir)
 }
 

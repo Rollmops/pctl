@@ -12,12 +12,12 @@ import (
 )
 
 func StartCommand(names []string, comment string) error {
-	processConfigs := CurrentContext.config.CollectProcessConfigsByNameSpecifiers(names, false)
+	processConfigs := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, false)
 	if len(processConfigs) == 0 {
 		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
 	}
 	log.Tracef("Starting processes: %v", names)
-	data, err := CurrentContext.persistenceReader.Read()
+	data, err := CurrentContext.PersistenceReader.Read()
 	if err != nil {
 		return nil
 	}
@@ -40,7 +40,7 @@ func StartCommand(names []string, comment string) error {
 func _startProcess(processConfig *config.ProcessConfig, trackedData *persistence.Data, comment string, depLevel int) error {
 	for _, dependencyName := range processConfig.DependsOn {
 		if dependencyName != processConfig.Name {
-			dc := CurrentContext.config.FindByName(dependencyName)
+			dc := CurrentContext.Config.FindByName(dependencyName)
 			if dc == nil {
 				return fmt.Errorf("unable to find dependencyName '%s' for process '%s'", dependencyName, processConfig.Name)
 			}
@@ -82,7 +82,7 @@ func _startProcess(processConfig *config.ProcessConfig, trackedData *persistence
 			}
 			dataEntry.Comment = comment
 			trackedData.AddOrUpdateEntry(dataEntry)
-			return output.StatusReturn{Error: CurrentContext.persistenceWriter.Write(trackedData)}
+			return output.StatusReturn{Error: CurrentContext.PersistenceWriter.Write(trackedData)}
 		})
 	}
 	return nil

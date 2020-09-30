@@ -4,15 +4,16 @@ import (
 	"github.com/Rollmops/pctl/config"
 	"github.com/Rollmops/pctl/output"
 	"github.com/Rollmops/pctl/persistence"
+	"github.com/Rollmops/pctl/persistence/csv"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
 
 type Context struct {
-	config            *config.Config
-	persistenceWriter persistence.Writer
-	persistenceReader persistence.Reader
-	output            output.Output
+	Config            *config.Config
+	PersistenceWriter persistence.Writer
+	PersistenceReader persistence.Reader
+	Output            output.Output
 	OutputWriter      *os.File
 }
 
@@ -20,17 +21,17 @@ var CurrentContext *Context
 
 func NewContext() (*Context, error) {
 	log.Trace("Creating context")
-	persistenceWriter, err := persistence.NewCsvWriter()
+	persistenceWriter, err := csv.NewCsvWriter()
 	if err != nil {
 		return nil, err
 	}
-	persistenceReader, err := persistence.NewCsvReader()
+	persistenceReader, err := csv.NewCsvReader()
 	if err != nil {
 		return nil, err
 	}
 	return &Context{
-		persistenceWriter: persistenceWriter,
-		persistenceReader: persistenceReader,
+		PersistenceWriter: persistenceWriter,
+		PersistenceReader: persistenceReader,
 		OutputWriter:      os.Stdout,
 	}, nil
 }
@@ -40,12 +41,12 @@ func (c *Context) Initialize() error {
 	if err != nil {
 		return err
 	}
-	log.Debugf("Using config path: %s", configPath)
+	log.Debugf("Using Config path: %s", configPath)
 	configLoader := config.GetLoaderFromPath(configPath)
-	c.config, err = configLoader.Load(configPath)
+	c.Config, err = configLoader.Load(configPath)
 	if err != nil {
 		return err
 	}
-	log.Debugf("Loaded %d process configuration(s)", len(c.config.Processes))
+	log.Debugf("Loaded %d process configuration(s)", len(c.Config.Processes))
 	return nil
 }

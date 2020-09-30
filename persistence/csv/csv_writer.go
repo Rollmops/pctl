@@ -1,8 +1,9 @@
-package persistence
+package csv
 
 import (
 	"encoding/csv"
 	"encoding/json"
+	"github.com/Rollmops/pctl/persistence"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
@@ -14,7 +15,7 @@ type CsvWriter struct {
 }
 
 func NewCsvReader() (*CsvReader, error) {
-	stateFilePath, err := GetStateFilePath()
+	stateFilePath, err := persistence.GetStateFilePath()
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +27,7 @@ func NewTestCsvReader(stateFilePath string) CsvReader {
 	return CsvReader{stateFilePath: stateFilePath}
 }
 
-func (c *CsvWriter) Write(data *Data) error {
+func (c *CsvWriter) Write(data *persistence.Data) error {
 	log.Debugf("Opening %s", c.stateFilePath)
 	file, err := os.OpenFile(c.stateFilePath, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {

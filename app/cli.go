@@ -22,7 +22,7 @@ func CreateCliApp() *cli.App {
 			}
 			log.SetLevel(level)
 
-			color.NoColor = c.Bool("no-color-output")
+			color.NoColor = c.Bool("no-color-Output")
 
 			CurrentContext, err = NewContext()
 			if err != nil {
@@ -32,7 +32,7 @@ func CreateCliApp() *cli.App {
 			if err != nil {
 				return err
 			}
-			return CheckPersistenceConfigDiscrepancy()
+			return ValidatePersistenceConfigDiscrepancy()
 		},
 		Name:  "pctl",
 		Usage: "process control",
@@ -45,10 +45,10 @@ func CreateCliApp() *cli.App {
 				Usage:   "level: trace,debug,info,warn,warning,error,fatal,panic",
 			},
 			&cli.BoolFlag{
-				Name:    "no-color-output",
+				Name:    "no-color-Output",
 				Value:   false,
 				EnvVars: []string{"PCTL_NO_COLOR_OUTPUT"},
-				Usage:   "do not use colors output",
+				Usage:   "do not use colors Output",
 			},
 		},
 		Commands: []*cli.Command{

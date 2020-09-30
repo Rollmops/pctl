@@ -10,16 +10,12 @@ import (
 	"path"
 )
 
-func init() {
-	_ = SetConfigEnvPath("integration.yaml")
-}
-
 func SetConfigEnvPath(p ...string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	pathAsList := []string{cwd, "..", "fixtures"}
+	pathAsList := []string{cwd, "fixtures"}
 	pathAsList = append(pathAsList, p...)
 	configPath := path.Join(pathAsList...)
 	return os.Setenv("PCTL_CONFIG_PATH", configPath)

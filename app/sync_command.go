@@ -20,9 +20,9 @@ func SyncCommand(names []string, strategy string) error {
 		return fmt.Errorf("unknown sync strategy name: '%s'", strategy)
 	}
 
-	processConfigs := CurrentContext.config.CollectProcessConfigsByNameSpecifiers(names, true)
+	processConfigs := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, true)
 	if len(processConfigs) == 0 {
-		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
+		return fmt.Errorf("no matching process Config for name specifiers: %s", strings.Join(names, ", "))
 	}
 
 	// TODO change hacky implementation
@@ -30,7 +30,7 @@ func SyncCommand(names []string, strategy string) error {
 	process.CommandlinePidRetrieveStrategyAttempts = 1
 	defer func() { process.CommandlinePidRetrieveStrategyAttempts = 10 }()
 
-	data, err := CurrentContext.persistenceReader.Read()
+	data, err := CurrentContext.PersistenceReader.Read()
 	if err != nil {
 		return nil
 	}
@@ -55,7 +55,7 @@ func SyncCommand(names []string, strategy string) error {
 				if err == nil && pid != -1 {
 					dataEntry := &persistence.DataEntry{Pid: pid, Name: processConfig.Name, Command: processConfig.Command}
 					data.AddOrUpdateEntry(dataEntry)
-					err = CurrentContext.persistenceWriter.Write(data)
+					err = CurrentContext.PersistenceWriter.Write(data)
 					if err != nil {
 						return output.StatusReturn{Error: err}
 					}

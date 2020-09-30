@@ -5,14 +5,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func CheckPersistenceConfigDiscrepancy() error {
+func ValidatePersistenceConfigDiscrepancy() error {
 	logrus.Debug("Checking for config - persistence discrepancies")
-	data, err := CurrentContext.persistenceReader.Read()
+	data, err := CurrentContext.PersistenceReader.Read()
 	if err != nil {
 		return err
 	}
 	for _, dataEntry := range data.Entries {
-		if p := CurrentContext.config.FindByName(dataEntry.Name); p == nil {
+		if p := CurrentContext.Config.FindByName(dataEntry.Name); p == nil {
 			isRunning, err := gopsutil.PidExists(dataEntry.Pid)
 			if err != nil {
 				return err
@@ -25,7 +25,7 @@ func CheckPersistenceConfigDiscrepancy() error {
 				logrus.Warningf("Found tracked process '%s' that is not running and not found in config - removing it",
 					dataEntry.Name)
 				data.RemoveByName(dataEntry.Name)
-				err = CurrentContext.persistenceWriter.Write(data)
+				err = CurrentContext.PersistenceWriter.Write(data)
 				if err != nil {
 					return err
 				}
