@@ -1,4 +1,4 @@
-package app_test
+package main_test
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestStartStopCommand(t *testing.T) {
-	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
+	assert.NoError(t, test.SetConfigEnvPath("app", "integration.yaml"))
 
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should not be running")
 	pctlApp := app.CreateCliApp()
@@ -24,7 +24,7 @@ func TestStartStopCommand(t *testing.T) {
 }
 
 func TestStartWithDependencies(t *testing.T) {
-	assert.NoError(t, test.SetConfigEnvPath("dependsOn.yaml"))
+	assert.NoError(t, test.SetConfigEnvPath("app", "dependsOn.yaml"))
 
 	pctlApp := app.CreateCliApp()
 
@@ -41,7 +41,7 @@ Starting process 'p1' ... Ok
 }
 
 func TestAppInfoCommand(t *testing.T) {
-	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
+	assert.NoError(t, test.SetConfigEnvPath("app", "integration.yaml"))
 	pctlApp := app.CreateCliApp()
 	out := test.CaptureStdout(func() {
 		assert.NoError(t, pctlApp.Run([]string{"pctl", "info"}))
@@ -53,7 +53,7 @@ Test2: ["sleep","2345"], running: false, dirty: false
 }
 
 func TestAppInfoJsonCommand(t *testing.T) {
-	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
+	assert.NoError(t, test.SetConfigEnvPath("app", "integration.yaml"))
 	pctlApp := app.CreateCliApp()
 	out := test.CaptureStdout(func() {
 		assert.NoError(t, pctlApp.Run([]string{"pctl", "info", "--format", "json"}))
@@ -65,7 +65,7 @@ func TestAppInfoJsonCommand(t *testing.T) {
 }
 
 func TestAppInfoJsonFlatCommand(t *testing.T) {
-	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
+	assert.NoError(t, test.SetConfigEnvPath("app", "integration.yaml"))
 	pctlApp := app.CreateCliApp()
 	out := test.CaptureStdout(func() {
 		assert.NoError(t, pctlApp.Run([]string{"pctl", "info", "--format", "json-flat"}))
@@ -77,7 +77,7 @@ func TestAppInfoJsonFlatCommand(t *testing.T) {
 }
 
 func TestValidatePersistenceConfigDiscrepancyStillRunning(t *testing.T) {
-	assert.NoError(t, test.SetConfigEnvPath("check_test", "step1.yaml"))
+	assert.NoError(t, test.SetConfigEnvPath("app", "check_test", "step1.yaml"))
 
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should not be running")
 	pctlApp := app.CreateCliApp()
@@ -86,7 +86,7 @@ func TestValidatePersistenceConfigDiscrepancyStillRunning(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be running")
 
-	assert.NoError(t, test.SetConfigEnvPath("check_test", "step2.yaml"))
+	assert.NoError(t, test.SetConfigEnvPath("app", "check_test", "step2.yaml"))
 
 	out := test.CaptureLogOutput(func() {
 		assert.NoError(t, pctlApp.Run([]string{"pctl", "info"}))
