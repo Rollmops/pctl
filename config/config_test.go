@@ -2,8 +2,15 @@ package config_test
 
 import (
 	"github.com/Rollmops/pctl/config"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+type TestLoader struct{}
+
+func (t *TestLoader) Load(_ string) (*config.Config, error) {
+	return nil, nil
+}
 
 func TestFindByName(t *testing.T) {
 	_config := config.Config{
@@ -32,17 +39,9 @@ func TestFindByName(t *testing.T) {
 }
 
 func TestGetLoaderFromPathYaml(t *testing.T) {
-	loader := config.GetLoaderFromPath("/path/to/config.yaml")
-	if _, ok := loader.(*config.YamlLoader); !ok {
-		t.Fatal("expected YamlLoader")
-	}
-}
-
-func TestGetLoaderFromPathYml(t *testing.T) {
-	loader := config.GetLoaderFromPath("/path/to/config.yml")
-	if _, ok := loader.(*config.YamlLoader); !ok {
-		t.Fatal("expected YamlLoader")
-	}
+	config.SuffixConfigLoaderMap["sfx"] = &TestLoader{}
+	loader := config.GetLoaderFromPath("/path/to/config.sfx")
+	assert.IsType(t, (*TestLoader)(nil), loader)
 }
 
 func TestValidateConfig(t *testing.T) {

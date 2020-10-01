@@ -1,7 +1,8 @@
-package config_test
+package yaml_test
 
 import (
-	"github.com/Rollmops/pctl/config"
+	"github.com/Rollmops/pctl/config/yaml"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"path"
 	"path/filepath"
@@ -18,18 +19,16 @@ func init() {
 
 func TestLoadConfigOk(t *testing.T) {
 	testConfigPath := path.Join(testDataDir, "pctl.yml")
-	yamlLoader := config.NewYamlLoader()
+	yamlLoader := yaml.NewYamlLoader()
 
-	_config, _ := yamlLoader.Load(testConfigPath)
-
-	if processCount := len(_config.Processes); processCount != 2 {
-		t.Fatalf("Expected process count of 2, got %d", processCount)
-	}
+	_config, err := yamlLoader.Load(testConfigPath)
+	assert.NoError(t, err)
+	assert.Equal(t, len(_config.Processes), 2)
 }
 
 func TestCircleInclude(t *testing.T) {
 	testConfigPath := path.Join(testDataDir, "pctl_circle_include.yml")
-	yamlLoader := config.NewYamlLoader()
+	yamlLoader := yaml.NewYamlLoader()
 
 	_, err := yamlLoader.Load(testConfigPath)
 
@@ -40,7 +39,7 @@ func TestCircleInclude(t *testing.T) {
 
 func TestLoadConfigGlobIncludes(t *testing.T) {
 	testConfigPath := path.Join(testDataDir, "glob_test.yml")
-	yamlLoader := config.NewYamlLoader()
+	yamlLoader := yaml.NewYamlLoader()
 
 	_config, _ := yamlLoader.Load(testConfigPath)
 

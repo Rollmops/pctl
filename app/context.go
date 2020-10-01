@@ -2,12 +2,19 @@ package app
 
 import (
 	"github.com/Rollmops/pctl/config"
+	"github.com/Rollmops/pctl/config/yaml"
 	"github.com/Rollmops/pctl/output"
 	"github.com/Rollmops/pctl/persistence"
 	"github.com/Rollmops/pctl/persistence/csv"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
+
+func init() {
+	loader := &yaml.Loader{}
+	config.SuffixConfigLoaderMap["yaml"] = loader
+	config.SuffixConfigLoaderMap["yml"] = loader
+}
 
 type Context struct {
 	Config            *config.Config
