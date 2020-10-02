@@ -3,7 +3,10 @@ module github.com/Rollmops/pctl
 go 1.15
 
 require (
+	github.com/davidscholberg/go-durationfmt v0.0.0-20170122144659-64843a2083d3
 	github.com/fatih/color v1.9.0
+	github.com/go-openapi/strfmt v0.19.5 // indirect
+	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/minio/minio v0.0.0-20200926040242-511424a287e7
 	github.com/shirou/gopsutil v2.20.8+incompatible
 	github.com/sirupsen/logrus v1.6.0

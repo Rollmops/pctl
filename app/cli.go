@@ -11,7 +11,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func CreateCliApp() *cli.App {
+func CreateCliApp() (*cli.App, error) {
 	return &cli.App{
 		Before: func(c *cli.Context) error {
 			logLevelString := c.String("loglevel")
@@ -21,13 +21,8 @@ func CreateCliApp() *cli.App {
 				os.Exit(1)
 			}
 			log.SetLevel(level)
-
-			color.NoColor = c.Bool("no-color-Output")
-
-			CurrentContext, err = NewContext()
-			if err != nil {
-				return err
-			}
+			color.NoColor = c.Bool("no-color")
+			CurrentContext.OutputWriter = os.Stdout
 			err = CurrentContext.Initialize()
 			if err != nil {
 				return err
@@ -45,10 +40,10 @@ func CreateCliApp() *cli.App {
 				Usage:   "level: trace,debug,info,warn,warning,error,fatal,panic",
 			},
 			&cli.BoolFlag{
-				Name:    "no-color-Output",
+				Name:    "no-color",
 				Value:   false,
-				EnvVars: []string{"PCTL_NO_COLOR_OUTPUT"},
-				Usage:   "do not use colors Output",
+				EnvVars: []string{"PCTL_NO_COLOR"},
+				Usage:   "do not use colors",
 			},
 		},
 		Commands: []*cli.Command{
@@ -116,7 +111,7 @@ func CreateCliApp() *cli.App {
 						Name:     "format",
 						EnvVars:  []string{"PCTL_OUTPUT_FORMAT"},
 						Required: false,
-						Value:    "simple",
+						Value:    "default",
 						Usage: func() string {
 							keys := make([]string, 0, len(output.FormatMap))
 							for k := range output.FormatMap {
@@ -127,9 +122,13 @@ func CreateCliApp() *cli.App {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					return InfoCommand(c.Args().Slice(), c.String("format"))
+					format := c.String("format")
+					if format == "" {
+						format = "default"
+					}
+					return InfoCommand(c.Args().Slice(), format)
 				},
 			},
 		},
-	}
+	}, nil
 }

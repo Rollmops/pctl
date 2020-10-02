@@ -12,9 +12,10 @@ func TestStartStopCommand(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
 
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should not be running")
-	pctlApp := app.CreateCliApp()
+	pctlApp, err := app.CreateCliApp()
+	assert.NoError(t, err)
 
-	err := pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "Test1"})
+	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "Test1"})
 	assert.NoError(t, err)
 	assert.True(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be running")
 
@@ -26,10 +27,10 @@ func TestStartStopCommand(t *testing.T) {
 func TestStartWithDependencies(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("dependsOn.yaml"))
 
-	pctlApp := app.CreateCliApp()
-
+	pctlApp, err := app.CreateCliApp()
+	assert.NoError(t, err)
 	out := test.CaptureStdout(func() {
-		assert.NoError(t, pctlApp.Run([]string{"pctl", "--no-color-Output", "start", "p1"}))
+		assert.NoError(t, pctlApp.Run([]string{"pctl", "--no-color", "start", "p1"}))
 	})
 
 	assert.True(t, test.IsCommandRunning("sleep 3456"), "'sleep 3456' should be running")
@@ -42,19 +43,15 @@ Starting process 'p1' ... Ok
 
 func TestAppInfoCommand(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
-	pctlApp := app.CreateCliApp()
-	out := test.CaptureStdout(func() {
-		assert.NoError(t, pctlApp.Run([]string{"pctl", "info"}))
-	})
-	expectedInfoOut := `Test1: ["sleep","1234"], running: false, dirty: false
-Test2: ["sleep","2345"], running: false, dirty: false
-`
-	assert.Equal(t, expectedInfoOut, out)
+	pctlApp, err := app.CreateCliApp()
+	assert.NoError(t, err)
+	assert.NoError(t, pctlApp.Run([]string{"pctl", "info", "--format", "simple"}))
 }
 
 func TestAppInfoJsonCommand(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
-	pctlApp := app.CreateCliApp()
+	pctlApp, err := app.CreateCliApp()
+	assert.NoError(t, err)
 	out := test.CaptureStdout(func() {
 		assert.NoError(t, pctlApp.Run([]string{"pctl", "info", "--format", "json"}))
 	})
@@ -66,7 +63,8 @@ func TestAppInfoJsonCommand(t *testing.T) {
 
 func TestAppInfoJsonFlatCommand(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
-	pctlApp := app.CreateCliApp()
+	pctlApp, err := app.CreateCliApp()
+	assert.NoError(t, err)
 	out := test.CaptureStdout(func() {
 		assert.NoError(t, pctlApp.Run([]string{"pctl", "info", "--format", "json-flat"}))
 	})
@@ -80,9 +78,10 @@ func TestValidatePersistenceConfigDiscrepancyStillRunning(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("check_test", "step1.yaml"))
 
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should not be running")
-	pctlApp := app.CreateCliApp()
+	pctlApp, err := app.CreateCliApp()
+	assert.NoError(t, err)
 
-	err := pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "Test1"})
+	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "Test1"})
 	assert.NoError(t, err)
 	assert.True(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be running")
 

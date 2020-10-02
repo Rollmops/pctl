@@ -4,6 +4,6 @@ processes:
   stopStrategy:
     script:
       path: ~/stop_script.sh
-      args: [huhu, was geht]
+      args: [${pid}, ${cmd}, huhu, was geht]
       forwardStdout: true
       forwardStderr: true

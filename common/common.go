@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"github.com/davidscholberg/go-durationfmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,4 +45,32 @@ func ExpandPath(path string) (string, error) {
 
 	return path, nil
 
+}
+
+func ByteCountIEC(b uint64) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := uint64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB",
+		float64(b)/float64(div), "KMGTPE"[exp])
+}
+
+func DurationToString(d time.Duration) (string, error) {
+	var format string
+	if d > time.Hour*24 {
+		format = "%dd %hh"
+	} else if d > time.Hour {
+		format = "%hh %mm"
+	} else if d > time.Minute {
+		format = "%mm %ss"
+	} else {
+		format = "%ss"
+	}
+	return durationfmt.Format(d, format)
 }
