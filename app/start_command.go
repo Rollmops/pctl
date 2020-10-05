@@ -80,6 +80,7 @@ func _startProcess(processConfig *config.ProcessConfig, trackedData *persistence
 			if err != nil {
 				return output.StatusReturn{Error: err}
 			}
+			dataEntry.MarkFlag = persistence.MarkedAsStarted
 			dataEntry.Comment = comment
 			trackedData.AddOrUpdateEntry(dataEntry)
 			return output.StatusReturn{Error: CurrentContext.PersistenceWriter.Write(trackedData)}

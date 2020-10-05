@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/davidscholberg/go-durationfmt v0.0.0-20170122144659-64843a2083d3
+	github.com/drone/envsubst v1.0.2
 	github.com/fatih/color v1.9.0
 	github.com/go-openapi/strfmt v0.19.5 // indirect
 	github.com/jedib0t/go-pretty v4.3.0+incompatible

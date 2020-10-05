@@ -17,6 +17,7 @@ func CreateInfoEntries(persistenceData *persistence.Data, processConfigs []*conf
 		}
 
 		if e := persistenceData.FindByName(processConfig.Name); e != nil {
+			infoEntry.MarkFlag = e.MarkFlag
 			infoEntry.RunningCommand = e.Command
 			infoEntry.Comment = e.Comment
 			p := process.Process{Config: processConfig}

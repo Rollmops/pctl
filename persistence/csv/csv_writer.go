@@ -10,24 +10,24 @@ import (
 	"strconv"
 )
 
-type CsvWriter struct {
+type Writer struct {
 	stateFilePath string
 }
 
-func NewCsvReader() (*CsvReader, error) {
+func NewCsvReader() (*Reader, error) {
 	stateFilePath, err := persistence.GetStateFilePath()
 	if err != nil {
 		return nil, err
 	}
 	stateFilePath = filepath.Join(stateFilePath, "state.csv")
-	return &CsvReader{stateFilePath: stateFilePath}, nil
+	return &Reader{stateFilePath: stateFilePath}, nil
 }
 
-func NewTestCsvReader(stateFilePath string) CsvReader {
-	return CsvReader{stateFilePath: stateFilePath}
+func NewTestCsvReader(stateFilePath string) Reader {
+	return Reader{stateFilePath: stateFilePath}
 }
 
-func (c *CsvWriter) Write(data *persistence.Data) error {
+func (c *Writer) Write(data *persistence.Data) error {
 	log.Debugf("Opening %s", c.stateFilePath)
 	file, err := os.OpenFile(c.stateFilePath, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
@@ -50,7 +50,13 @@ func (c *CsvWriter) Write(data *persistence.Data) error {
 		if err != nil {
 			return err
 		}
-		err = writer.Write([]string{d.Name, strconv.Itoa(int(d.Pid)), string(commandString), d.Comment})
+		err = writer.Write([]string{
+			d.Name,
+			strconv.Itoa(int(d.Pid)),
+			string(commandString),
+			d.Comment,
+			strconv.Itoa(d.MarkFlag),
+		})
 		if err != nil {
 			return err
 		}

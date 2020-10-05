@@ -37,10 +37,13 @@ func StopCommand(names []string, noWait bool) error {
 		}
 		_ = output.PrintMessageAndStatus(fmt.Sprintf("Stopping process '%s", processConfig.Name),
 			func() output.StatusReturn {
-				return _stopProcess(processConfig, trackedData, noWait)
+				statusReturn := _stopProcess(processConfig, trackedData, noWait)
+				if statusReturn.Error == nil {
+					trackedData.RemoveByName(processConfig.Name)
+				}
+				return statusReturn
 			},
 		)
-		trackedData.RemoveByName(processConfig.Name)
 		err = CurrentContext.PersistenceWriter.Write(trackedData)
 		if err != nil {
 			return err
@@ -55,6 +58,7 @@ func _stopProcess(processConfig *config.ProcessConfig, trackedData *persistence.
 		// TODO warn if we find a process with the same cmdline
 		return output.StatusReturn{OkMessage: "was not running"}
 	} else {
+		dataEntry.MarkFlag = persistence.MarkedAsStopped
 		p := process.Process{Config: processConfig}
 		err := p.SynchronizeWithPid(dataEntry.Pid)
 		if err != nil {

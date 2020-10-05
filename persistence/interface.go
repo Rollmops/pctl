@@ -6,11 +6,17 @@ type Data struct {
 	Entries []*DataEntry
 }
 
+const (
+	MarkedAsStopped = iota
+	MarkedAsStarted
+)
+
 type DataEntry struct {
-	Pid     int32
-	Name    string
-	Command []string
-	Comment string
+	Pid      int32
+	Name     string
+	Command  []string
+	Comment  string
+	MarkFlag int
 }
 
 type Writer interface {
@@ -41,6 +47,7 @@ func (d *Data) AddOrUpdateEntry(entry *DataEntry) {
 			d.Entries[index].Pid = entry.Pid
 			d.Entries[index].Command = entry.Command
 			d.Entries[index].Comment = entry.Comment
+			d.Entries[index].MarkFlag = entry.MarkFlag
 			return
 		}
 	}
