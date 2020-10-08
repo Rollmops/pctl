@@ -24,6 +24,18 @@ func TestStartStopCommand(t *testing.T) {
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be stopped")
 }
 
+func TestStartCommand(t *testing.T) {
+	assert.NoError(t, test.SetConfigEnvPath("start-order.yaml"))
+
+	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should not be running")
+	pctlApp, err := app.CreateCliApp()
+	assert.NoError(t, err)
+
+	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "0"})
+	assert.NoError(t, err)
+	assert.True(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be running")
+}
+
 func TestStartWithDependencies(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("dependsOn.yaml"))
 

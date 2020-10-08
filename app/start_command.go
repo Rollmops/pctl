@@ -6,28 +6,121 @@ import (
 	"github.com/Rollmops/pctl/output"
 	"github.com/Rollmops/pctl/persistence"
 	"github.com/Rollmops/pctl/process"
-	gopsutil "github.com/shirou/gopsutil/process"
 	log "github.com/sirupsen/logrus"
 	"strings"
+	"sync"
+	"time"
 )
+
+type ProcessReadyCheck struct {
+	Process      *process.Process
+	dependencies []*ProcessReadyCheck
+	started      bool
+}
+
+// Is ready to start, when all dependencies are started
+func (c *ProcessReadyCheck) IsReadyToStart() bool {
+	for _, d := range c.dependencies {
+		if !d.started {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *ProcessReadyCheck) Start() error {
+	err := c.Process.Start()
+	if err != nil {
+		return err
+	}
+
+	err = c.Process.WaitForStarted(5*time.Second, 100*time.Millisecond)
+	if err != nil {
+		return err
+	}
+	log.Debugf("Started process '%s'", c.Process.Config.Name)
+	c.started = true
+	return nil
+}
+
+func (c *ProcessReadyCheck) AddDependency(d *ProcessReadyCheck) {
+	for _, dep := range c.dependencies {
+		if d == dep {
+			return
+		}
+	}
+	c.dependencies = append(c.dependencies, d)
+}
+
+func StartProcessReadyCheck(c *ProcessReadyCheck, wg *sync.WaitGroup, s *persistence.Data, comment string) error {
+	entry := s.FindByName(c.Process.Config.Name)
+	if entry != nil {
+		err := c.Process.SynchronizeWithPid(entry.Pid)
+		if err == nil && c.Process.IsRunning() {
+			c.started = true
+			fmt.Printf(output.OkColor("Process '%s' is already running\n", c.Process.Config.Name))
+			wg.Done()
+			return nil
+		}
+	}
+	for {
+		if c.IsReadyToStart() {
+			err := c.Start()
+			if err != nil {
+				s.RemoveByName(c.Process.Config.Name)
+				fmt.Printf(output.FailedColor("Failed to start '%s'\n", c.Process.Config.Name))
+			} else {
+				newDataEntry, err := persistence.NewDataEntryFromProcess(c.Process)
+				newDataEntry.Comment = comment
+				if err != nil {
+					return err
+				}
+				s.AddOrUpdateEntry(newDataEntry)
+				fmt.Printf(output.OkColor("Started process '%s'\n", c.Process.Config.Name))
+			}
+			wg.Done()
+			return err
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
 
 func StartCommand(names []string, comment string) error {
 	processConfigs := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, false)
 	if len(processConfigs) == 0 {
 		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
 	}
-	log.Tracef("Starting processes: %v", names)
-	data, err := CurrentContext.PersistenceReader.Read()
+	persistentState, err := CurrentContext.PersistenceReader.Read()
 	if err != nil {
 		return nil
 	}
-	for _, processConfig := range processConfigs {
-		err = _startProcess(processConfig, data, comment, 0)
-		if err != nil {
-			return err
+
+	prc := make(map[string]*ProcessReadyCheck)
+	var wg sync.WaitGroup
+
+	for _, p := range processConfigs {
+		prc = addToProcessReadyCheckMap(p, prc, &wg)
+	}
+	for _, v := range prc {
+		go StartProcessReadyCheck(v, &wg, persistentState, comment)
+	}
+	wg.Wait()
+	return CurrentContext.PersistenceWriter.Write(persistentState)
+}
+
+func addToProcessReadyCheckMap(c *config.ProcessConfig, prc map[string]*ProcessReadyCheck, wg *sync.WaitGroup) map[string]*ProcessReadyCheck {
+	if prc[c.Name] == nil {
+		wg.Add(1)
+		prc[c.Name] = &ProcessReadyCheck{
+			Process: &process.Process{Config: c},
+			started: false,
 		}
 	}
-	return nil
+	for _, d := range c.DependsOn {
+		prc = addToProcessReadyCheckMap(CurrentContext.Config.FindByName(d), prc, wg)
+		prc[c.Name].AddDependency(prc[d])
+	}
+	return prc
 }
 
 /*
@@ -37,66 +130,3 @@ func StartCommand(names []string, comment string) error {
 	    - state: running -> do nothing (already running)
 		- state: stopped unexpected -> start process
 */
-func _startProcess(processConfig *config.ProcessConfig, trackedData *persistence.Data, comment string, depLevel int) error {
-	for _, dependencyName := range processConfig.DependsOn {
-		if dependencyName != processConfig.Name {
-			dc := CurrentContext.Config.FindByName(dependencyName)
-			if dc == nil {
-				return fmt.Errorf("unable to find dependencyName '%s' for process '%s'", dependencyName, processConfig.Name)
-			}
-			err := _startProcess(dc, trackedData, comment, depLevel+1)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	isAlreadyRunning, err := _isAlreadyRunning(processConfig.Name, trackedData)
-	if err != nil {
-		return err
-	}
-	startMessage := "Starting process"
-	if depLevel > 0 {
-		startMessage = "Starting dependency"
-	}
-	if depLevel == 0 || !isAlreadyRunning {
-		_ = output.PrintMessageAndStatus(fmt.Sprintf("%s '%s'", startMessage, processConfig.Name), func() output.StatusReturn {
-			dataEntry := trackedData.FindByName(processConfig.Name)
-			if dataEntry != nil {
-				pidExists, err := gopsutil.PidExists(dataEntry.Pid)
-				if err != nil {
-					return output.StatusReturn{Error: err}
-				}
-				if pidExists {
-					return output.StatusReturn{OkMessage: "was already running"}
-				}
-			}
-			_process := &process.Process{Config: processConfig}
-			err := _process.Start()
-			if err != nil {
-				return output.StatusReturn{Error: err}
-			}
-			dataEntry, err = persistence.NewDataEntryFromProcess(_process)
-			if err != nil {
-				return output.StatusReturn{Error: err}
-			}
-			dataEntry.MarkFlag = persistence.MarkedAsStarted
-			dataEntry.Comment = comment
-			trackedData.AddOrUpdateEntry(dataEntry)
-			return output.StatusReturn{Error: CurrentContext.PersistenceWriter.Write(trackedData)}
-		})
-	}
-	return nil
-}
-
-func _isAlreadyRunning(name string, trackedData *persistence.Data) (bool, error) {
-	dataEntry := trackedData.FindByName(name)
-	if dataEntry != nil {
-		pidExists, err := gopsutil.PidExists(dataEntry.Pid)
-		if err != nil {
-			return false, err
-		}
-		return pidExists, nil
-	}
-	return false, nil
-}

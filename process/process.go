@@ -52,6 +52,18 @@ func (p *Process) Start() error {
 	return p.cmd.Start()
 }
 
+func (p *Process) WaitForStarted(maxWaitTime time.Duration, intervalDuration time.Duration) error {
+	attempts := maxWaitTime / intervalDuration
+	err := common.WaitUntilTrue(func() bool {
+		return p.IsRunning()
+	}, intervalDuration, uint(attempts))
+	if err != nil {
+		pid, _ := p.Pid()
+		return fmt.Errorf("unable to start process '%s' on PID %d", p.Config.Name, pid)
+	}
+	return nil
+}
+
 func (p *Process) Stop() error {
 	_process, err := p.Info()
 	if err != nil {

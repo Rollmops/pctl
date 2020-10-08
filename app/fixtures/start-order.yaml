@@ -1,0 +1,31 @@
+processes:
+  - name: 0
+    cmd: [ sleep, 1234 ]
+    dependsOn: [ 1, 2 ]
+  - name: 1
+    cmd:
+      - sleep
+      - 2345
+    dependsOn: [ 3, 5 ]
+  - name: 2
+    cmd: [ sleep, 1234 ]
+    dependsOn: [ 3 ]
+  - name: 3
+    cmd: [ sleep, 1234 ]
+    dependsOn: [ 4 ]
+  - name: 4
+    cmd: [ sleep, 1234 ]
+  - name: 5
+    cmd: [ sleep, 1234 ]
+    dependsOn: [ 6 ]
+  - name: 6
+    cmd: [ sleep, 1234 ]
+  - name: A
+    cmd: [ sleep, 1234 ]
+    dependsOn: [ B ]
+  - name: B
+    cmd: [ sleep, 1234 ]
+  - name: C
+    cmd: [ sleep, 1234 ]
+  - name: D
+    cmd: [ sleep, 1234 ]

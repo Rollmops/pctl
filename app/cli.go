@@ -12,6 +12,18 @@ import (
 )
 
 func CreateCliApp() (*cli.App, error) {
+	err := CurrentContext.Initialize()
+	if err != nil {
+		return nil, err
+	}
+	err = ValidatePersistenceConfigDiscrepancy()
+	if err != nil {
+		return nil, err
+	}
+	err = ValidateAcyclicDependencies()
+	if err != nil {
+		return nil, err
+	}
 	return &cli.App{
 		Before: func(c *cli.Context) error {
 			logLevelString := c.String("loglevel")
@@ -23,11 +35,7 @@ func CreateCliApp() (*cli.App, error) {
 			log.SetLevel(level)
 			color.NoColor = c.Bool("no-color")
 			CurrentContext.OutputWriter = os.Stdout
-			err = CurrentContext.Initialize()
-			if err != nil {
-				return err
-			}
-			return ValidatePersistenceConfigDiscrepancy()
+			return nil
 		},
 		Name:  "pctl",
 		Usage: "process control",
