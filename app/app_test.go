@@ -9,29 +9,32 @@ import (
 )
 
 func TestStartStopCommand(t *testing.T) {
+	defer func() {
+		assert.NoError(t, app.Run([]string{"pctl", "stop", "--nowait", "*"}))
+	}()
 	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
 
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should not be running")
-	pctlApp, err := app.CreateCliApp()
-	assert.NoError(t, err)
 
-	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "Test1"})
+	err := app.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "Test1"})
 	assert.NoError(t, err)
 	assert.True(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be running")
 
-	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "stop", "--nowait", "Test1"})
+	err = app.Run([]string{"pctl", "--loglevel", "DEBUG", "stop", "--nowait", "Test1"})
 	assert.NoError(t, err)
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be stopped")
 }
 
 func TestStartCommand(t *testing.T) {
+	defer func() {
+		assert.NoError(t, app.Run([]string{"pctl", "stop", "--nowait", "*"}))
+	}()
+
 	assert.NoError(t, test.SetConfigEnvPath("start-order.yaml"))
 
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should not be running")
-	pctlApp, err := app.CreateCliApp()
-	assert.NoError(t, err)
 
-	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "0"})
+	err := app.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "0"})
 	assert.NoError(t, err)
 	assert.True(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be running")
 }
@@ -39,33 +42,31 @@ func TestStartCommand(t *testing.T) {
 func TestStartWithDependencies(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("dependsOn.yaml"))
 
-	pctlApp, err := app.CreateCliApp()
-	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, app.Run([]string{"pctl", "stop", "--nowait", "*"}))
+	}()
+
 	out := test.CaptureStdout(func() {
-		assert.NoError(t, pctlApp.Run([]string{"pctl", "--no-color", "start", "p1"}))
+		assert.NoError(t, app.Run([]string{"pctl", "--no-color", "start", "p1"}))
 	})
 
 	assert.True(t, test.IsCommandRunning("sleep 3456"), "'sleep 3456' should be running")
 	assert.True(t, test.IsCommandRunning("sleep 4567"), "'sleep 4567' should be running")
 
-	assert.Equal(t, out, `Starting dependency 'p2' ... Ok
-Starting process 'p1' ... Ok
-`)
+	assert.Equal(t, `Started process 'p2'
+Started process 'p1'
+`, out)
 }
 
 func TestAppInfoCommand(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
-	pctlApp, err := app.CreateCliApp()
-	assert.NoError(t, err)
-	assert.NoError(t, pctlApp.Run([]string{"pctl", "info", "--format", "simple"}))
+	assert.NoError(t, app.Run([]string{"pctl", "info", "--format", "simple"}))
 }
 
 func TestAppInfoJsonCommand(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
-	pctlApp, err := app.CreateCliApp()
-	assert.NoError(t, err)
 	out := test.CaptureStdout(func() {
-		assert.NoError(t, pctlApp.Run([]string{"pctl", "info", "--format", "json"}))
+		assert.NoError(t, app.Run([]string{"pctl", "info", "--format", "json"}))
 	})
 
 	var obj interface{}
@@ -75,10 +76,8 @@ func TestAppInfoJsonCommand(t *testing.T) {
 
 func TestAppInfoJsonFlatCommand(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
-	pctlApp, err := app.CreateCliApp()
-	assert.NoError(t, err)
 	out := test.CaptureStdout(func() {
-		assert.NoError(t, pctlApp.Run([]string{"pctl", "info", "--format", "json-flat"}))
+		assert.NoError(t, app.Run([]string{"pctl", "info", "--format", "json-flat"}))
 	})
 
 	var obj interface{}
@@ -89,20 +88,17 @@ func TestAppInfoJsonFlatCommand(t *testing.T) {
 func TestValidatePersistenceConfigDiscrepancyStillRunning(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("check_test", "step1.yaml"))
 
-	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should not be running")
-	pctlApp, err := app.CreateCliApp()
-	assert.NoError(t, err)
+	assert.False(t, test.IsCommandRunning("sleep 5555"), "'sleep 5555' should not be running")
 
-	err = pctlApp.Run([]string{"pctl", "--loglevel", "DEBUG", "start", "Test1"})
+	err := app.Run([]string{"pctl", "start", "Test1"})
 	assert.NoError(t, err)
-	assert.True(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be running")
+	assert.True(t, test.IsCommandRunning("sleep 5555"), "'sleep 5555' should be running")
 
 	assert.NoError(t, test.SetConfigEnvPath("check_test", "step2.yaml"))
 
-	out := test.CaptureLogOutput(func() {
-		assert.NoError(t, pctlApp.Run([]string{"pctl", "info"}))
-	})
+	err = app.Run([]string{"pctl", "info"})
+	assert.Error(t, err)
 
-	assert.Regexp(t, "level=error\\s+msg=\"Found tracked running process 'Test1' with pid \\d+ that could not be "+
-		"found in config\"", out)
+	assert.Regexp(t, "found tracked running process 'Test1' with pid \\d+ that could not be found in config", err.Error())
+
 }

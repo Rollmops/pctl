@@ -7,11 +7,7 @@ import (
 )
 
 func main() {
-	pctlApp, err := app.CreateCliApp()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = pctlApp.Run(os.Args)
+	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}

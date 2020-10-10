@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/Rollmops/pctl/output"
 	"github.com/fatih/color"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"os"
 	"strings"
 
@@ -12,30 +12,18 @@ import (
 )
 
 func CreateCliApp() (*cli.App, error) {
-	err := CurrentContext.Initialize()
-	if err != nil {
-		return nil, err
-	}
-	err = ValidatePersistenceConfigDiscrepancy()
-	if err != nil {
-		return nil, err
-	}
-	err = ValidateAcyclicDependencies()
-	if err != nil {
-		return nil, err
-	}
 	return &cli.App{
 		Before: func(c *cli.Context) error {
 			logLevelString := c.String("loglevel")
-			level, err := log.ParseLevel(logLevelString)
+			level, err := logrus.ParseLevel(logLevelString)
 			if err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "Unable to parse loglevel '%s'\n", logLevelString)
-				os.Exit(1)
+				return fmt.Errorf("Unable to parse loglevel '%s'\n", logLevelString)
 			}
-			log.SetLevel(level)
+			logrus.SetLevel(level)
 			color.NoColor = c.Bool("no-color")
 			CurrentContext.OutputWriter = os.Stdout
 			return nil
+
 		},
 		Name:  "pctl",
 		Usage: "process control",

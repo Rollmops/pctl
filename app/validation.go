@@ -20,8 +20,7 @@ func ValidatePersistenceConfigDiscrepancy() error {
 				return err
 			}
 			if isRunning {
-				logrus.Errorf(
-					"Found tracked running process '%s' with pid %d that could not be found in config",
+				return fmt.Errorf("found tracked running process '%s' with pid %d that could not be found in config",
 					dataEntry.Name, dataEntry.Pid)
 			} else {
 				logrus.Warningf("Found tracked process '%s' that is not running and not found in config - removing it",
