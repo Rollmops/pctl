@@ -72,6 +72,7 @@ func StartProcessReadyCheck(c *ProcessReadyCheck, wg *sync.WaitGroup, s *persist
 			} else {
 				newDataEntry, err := persistence.NewDataEntryFromProcess(c.Process)
 				newDataEntry.Comment = comment
+				newDataEntry.MarkFlag = persistence.MarkedAsStarted
 				if err != nil {
 					return err
 				}
