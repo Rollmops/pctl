@@ -3,11 +3,10 @@ package output
 import (
 	"github.com/Rollmops/pctl/common"
 	"github.com/Rollmops/pctl/config"
-	"github.com/Rollmops/pctl/persistence"
 	"github.com/Rollmops/pctl/process"
 )
 
-func CreateInfoEntries(persistenceData *persistence.Data, processConfigs []*config.ProcessConfig) ([]*InfoEntry, error) {
+func CreateInfoEntries(processConfigs []*config.ProcessConfig) ([]*InfoEntry, error) {
 	var infoEntries []*InfoEntry
 	for _, processConfig := range processConfigs {
 		infoEntry := &InfoEntry{
@@ -16,25 +15,33 @@ func CreateInfoEntries(persistenceData *persistence.Data, processConfigs []*conf
 			RunningCommand: processConfig.Command,
 		}
 
-		if e := persistenceData.FindByName(processConfig.Name); e != nil {
-			infoEntry.MarkFlag = e.MarkFlag
-			infoEntry.RunningCommand = e.Command
-			infoEntry.Comment = e.Comment
+		runningProcessConfig, err := process.FindRunningEnvironInfoFromName(processConfig.Name)
+		if err != nil {
+			return nil, err
+		}
+		if runningProcessConfig == nil {
+			infoEntry.IsRunning = false
+			infoEntry.ConfigCommand = processConfig.Command
+
+		} else {
+			infoEntry.IsRunning = true
+			infoEntry.ConfigCommand = runningProcessConfig.Config.Command
+			infoEntry.ConfigCommandChanged = !common.CompareStringSlices(infoEntry.ConfigCommand, processConfig.Command)
 			p := process.Process{Config: processConfig}
-			err := p.SynchronizeWithPid(e.Pid)
+			err = p.SynchronizeWithPid(runningProcessConfig.Pid)
 			if err != nil {
 				return nil, err
 			}
-			if p.IsRunning() {
-				infoEntry.RunningInfo, err = p.Info()
-				if err != nil {
-					return nil, err
-				}
+			infoEntry.RunningInfo, err = p.Info()
+			if err != nil {
+				return nil, err
 			}
-			infoEntry.IsRunning = p.IsRunning()
-			infoEntry.StoppedUnexpectedly = !infoEntry.IsRunning
-			infoEntry.ConfigCommandChanged = !common.CompareStringSlices(e.Command, processConfig.Command)
+			infoEntry.RunningCommand, err = infoEntry.RunningInfo.CmdlineSlice()
+			if err != nil {
+				return nil, err
+			}
 		}
+
 		infoEntries = append(infoEntries, infoEntry)
 	}
 	return infoEntries, nil

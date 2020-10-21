@@ -24,12 +24,12 @@ var (
 type CommandlinePidRetrieveStrategy struct{}
 
 func (s *CommandlinePidRetrieveStrategy) Retrieve(p *Process) (int32, error) {
-	log.Tracef("Retrieving pid from command for %s", p.Config.Command)
+	log.Tracef("Retrieving Pid from command for %s", p.Config.Command)
 	var pid int32
 
 	if err := common.WaitUntilTrue(func() bool {
 		var err error
-		log.Tracef("Trying to find pid for command %v", p.Config.Command)
+		log.Tracef("Trying to find Pid for command %v", p.Config.Command)
 		pid, err = _findPidForCommandline(p.Config.Command)
 		if err != nil || pid == -1 {
 			return false

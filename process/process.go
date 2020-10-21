@@ -1,10 +1,12 @@
 package process
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Rollmops/pctl/common"
 	"github.com/Rollmops/pctl/config"
 	"github.com/Rollmops/pctl/stop_strategy"
+	"os"
 	"os/exec"
 	"time"
 
@@ -12,9 +14,10 @@ import (
 )
 
 type Process struct {
-	Config *config.ProcessConfig
-	info   *gopsutil.Process
-	cmd    *exec.Cmd
+	Config  *config.ProcessConfig
+	info    *gopsutil.Process
+	cmd     *exec.Cmd
+	environ map[string]string
 }
 
 func (p *Process) SynchronizeWithPid(pid int32) error {
@@ -40,7 +43,7 @@ func (p *Process) Pid() (int32, error) {
 	return strategy.Retrieve(p)
 }
 
-func (p *Process) Start() error {
+func (p *Process) Start(comment string) error {
 	name := p.Config.Command[0]
 
 	var args []string
@@ -48,8 +51,28 @@ func (p *Process) Start() error {
 		args = p.Config.Command[1:]
 	}
 
+	infoStr, err := _createRunningInfoJson(comment, p)
+	if err != nil {
+		return err
+	}
+	infoEnv := fmt.Sprintf("__PCTL_INFO__=%s", infoStr)
+
 	p.cmd = exec.Command(name, args...)
+	p.cmd.Env = os.Environ()
+	p.cmd.Env = append(p.cmd.Env, infoEnv)
 	return p.cmd.Start()
+}
+
+func _createRunningInfoJson(comment string, p *Process) (string, error) {
+	runningEnvironInfo := RunningEnvironInfo{
+		Config:  *p.Config,
+		Comment: comment,
+	}
+	infoStr, err := json.Marshal(runningEnvironInfo)
+	if err != nil {
+		return "", err
+	}
+	return string(infoStr), nil
 }
 
 func (p *Process) WaitForStarted(maxWaitTime time.Duration, intervalDuration time.Duration) error {

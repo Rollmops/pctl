@@ -47,7 +47,6 @@ type JsonInfoEntry struct {
 	ConfiguredCommand    []string     `json:"configuredCommand"`
 	RunningCommand       []string     `json:"runningCommand"`
 	IsRunning            bool         `json:"isRunning"`
-	StoppedUnexpectedly  bool         `json:"stoppedUnexpectedly"`
 	ConfigCommandChanged bool         `json:"configCommandChanged"`
 	Info                 *RunningInfo `json:"info"`
 }
@@ -71,7 +70,6 @@ func (j *JsonConsoleOutput) Write(infoEntries []*InfoEntry) error {
 			RunningCommand:       infoEntry.RunningCommand,
 			IsRunning:            infoEntry.IsRunning,
 			Info:                 runningInfo,
-			StoppedUnexpectedly:  infoEntry.StoppedUnexpectedly,
 			ConfigCommandChanged: infoEntry.ConfigCommandChanged,
 		}
 		jsonInfoEntries = append(jsonInfoEntries, jsonInfoEntry)

@@ -23,7 +23,7 @@ func init() {
 }
 
 func TestDefaultPidRetrieveStrategy(t *testing.T) {
-	tmpPidFilePath := "/tmp/pctl_test.pid"
+	tmpPidFilePath := "/tmp/pctl_test.Pid"
 	defer os.Remove(tmpPidFilePath)
 	testScriptPath := filepath.Join(_testDataDir, "write_pid.sh")
 
@@ -33,7 +33,7 @@ func TestDefaultPidRetrieveStrategy(t *testing.T) {
 		Command: []string{"bash", testScriptPath, tmpPidFilePath},
 	}
 	p := &process.Process{Config: c}
-	err := p.Start()
+	err := p.Start("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestProcessStart(t *testing.T) {
 		Command: []string{"rm", tmpFile.Name()},
 	}}
 
-	err = p.Start()
+	err = p.Start("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestProcessIsRunning(t *testing.T) {
 		t.Fatal("Expect process to be not running")
 	}
 
-	err := p.Start()
+	err := p.Start("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestProcessInfo(t *testing.T) {
 			t.Fatalf("Expect error on non started process")
 		}
 
-		err = p.Start()
+		err = p.Start("")
 		if err != nil {
 			t.Fatal(err)
 		}

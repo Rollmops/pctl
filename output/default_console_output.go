@@ -123,10 +123,8 @@ func _getStatusString(entry *InfoEntry) string {
 	var statusString string
 	if entry.IsRunning {
 		statusString = OkColor("Running")
-	} else if entry.StoppedUnexpectedly {
-		statusString = FailedColor("Crashed")
 	} else {
-		statusString = WarningColor("Stopped")
+		statusString = FailedColor("Stopped")
 	}
 	return statusString
 }

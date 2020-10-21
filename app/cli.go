@@ -51,21 +51,6 @@ func CreateCliApp() (*cli.App, error) {
 				},
 			},
 			{
-				Name:      "sync",
-				Usage:     "synchronize running processes that are not yet tracked",
-				ArgsUsage: "a list of process names",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "strategy",
-						Usage: "sync strategy to use: exact,ends-with",
-						Value: "exact",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					return SyncCommand(c.Args().Slice(), c.String("strategy"))
-				},
-			},
-			{
 				Name:      "start",
 				Usage:     "start process(es)",
 				ArgsUsage: "a list of process names",

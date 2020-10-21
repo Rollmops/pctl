@@ -10,10 +10,6 @@ func Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	err = ValidatePersistenceConfigDiscrepancy()
-	if err != nil {
-		return err
-	}
 	err = ValidateAcyclicDependencies()
 	if err != nil {
 		return err

@@ -5,8 +5,9 @@ import (
 )
 
 func init() {
-	PidRetrieveStrategies[""] = &DefaultPidRetrieveStrategy{}
-	PidRetrieveStrategies["default"] = &DefaultPidRetrieveStrategy{}
+	d := DefaultPidRetrieveStrategy{}
+	PidRetrieveStrategies[""] = &d
+	PidRetrieveStrategies["default"] = &d
 }
 
 type DefaultPidRetrieveStrategy struct{}

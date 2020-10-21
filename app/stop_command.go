@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/Rollmops/pctl/config"
 	"github.com/Rollmops/pctl/output"
-	"github.com/Rollmops/pctl/persistence"
 	"github.com/Rollmops/pctl/process"
 	log "github.com/sirupsen/logrus"
 	"strings"
@@ -16,51 +15,37 @@ func StopCommand(names []string, noWait bool) error {
 	if len(processConfigs) == 0 {
 		return fmt.Errorf("no matching process Config for name specifiers: %s", strings.Join(names, ", "))
 	}
-	trackedData, err := CurrentContext.PersistenceReader.Read()
-	if err != nil {
-		return err
-	}
 	for _, processConfig := range processConfigs {
 		for _, dependentOf := range CurrentContext.Config.GetAllDependentOf(processConfig.Name) {
 			if dependentOf.Name != processConfig.Name {
 				_ = output.PrintMessageAndStatus(fmt.Sprintf("Stopping dependency process '%s' of '%s", dependentOf.Name, processConfig.Name),
 					func() output.StatusReturn {
-						return _stopProcess(dependentOf, trackedData, noWait)
+						return _stopProcess(dependentOf, noWait)
 					},
 				)
-				trackedData.RemoveByName(dependentOf.Name)
-				err = CurrentContext.PersistenceWriter.Write(trackedData)
-				if err != nil {
-					return err
-				}
 			}
 		}
 		_ = output.PrintMessageAndStatus(fmt.Sprintf("Stopping process '%s", processConfig.Name),
 			func() output.StatusReturn {
-				statusReturn := _stopProcess(processConfig, trackedData, noWait)
-				if statusReturn.Error == nil {
-					trackedData.RemoveByName(processConfig.Name)
-				}
-				return statusReturn
+				return _stopProcess(processConfig, noWait)
 			},
 		)
-		err = CurrentContext.PersistenceWriter.Write(trackedData)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
 
-func _stopProcess(processConfig *config.ProcessConfig, trackedData *persistence.Data, noWait bool) output.StatusReturn {
-	dataEntry := trackedData.FindByName(processConfig.Name)
-	if dataEntry == nil {
+func _stopProcess(processConfig *config.ProcessConfig, noWait bool) output.StatusReturn {
+	runningEnvironInfo, err := process.FindRunningEnvironInfoFromName(processConfig.Name)
+	if err != nil {
+		return output.StatusReturn{Error: err}
+	}
+
+	if runningEnvironInfo == nil {
 		// TODO warn if we find a process with the same cmdline
 		return output.StatusReturn{OkMessage: "was not running"}
 	} else {
-		dataEntry.MarkFlag = persistence.MarkedAsStopped
 		p := process.Process{Config: processConfig}
-		err := p.SynchronizeWithPid(dataEntry.Pid)
+		err := p.SynchronizeWithPid(runningEnvironInfo.Pid)
 		if err != nil {
 			return output.StatusReturn{Error: err}
 		}

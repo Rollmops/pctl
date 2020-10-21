@@ -19,7 +19,7 @@ func init() {
 type CommandlineEndsWithPidRetrieveStrategy struct{}
 
 func (s *CommandlineEndsWithPidRetrieveStrategy) Retrieve(p *Process) (int32, error) {
-	log.Tracef("Retrieving pid from command end for %s", p.Config.Command)
+	log.Tracef("Retrieving Pid from command end for %s", p.Config.Command)
 	var pid int32
 
 	if err := common.WaitUntilTrue(func() bool {

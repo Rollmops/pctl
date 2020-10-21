@@ -13,12 +13,8 @@ func InfoCommand(names []string, format string) error {
 	o.SetWriter(CurrentContext.OutputWriter)
 
 	processConfigs := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, true)
-	persistenceData, err := CurrentContext.PersistenceReader.Read()
-	if err != nil {
-		return err
-	}
 
-	infoEntries, err := output.CreateInfoEntries(persistenceData, processConfigs)
+	infoEntries, err := output.CreateInfoEntries(processConfigs)
 	if err != nil {
 		return err
 	}

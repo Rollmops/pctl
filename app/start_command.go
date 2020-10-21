@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/Rollmops/pctl/config"
 	"github.com/Rollmops/pctl/output"
-	"github.com/Rollmops/pctl/persistence"
 	"github.com/Rollmops/pctl/process"
 	log "github.com/sirupsen/logrus"
 	"strings"
@@ -28,8 +27,8 @@ func (c *ProcessReadyCheck) IsReadyToStart() bool {
 	return true
 }
 
-func (c *ProcessReadyCheck) Start() error {
-	err := c.Process.Start()
+func (c *ProcessReadyCheck) Start(comment string) error {
+	err := c.Process.Start(comment)
 	if err != nil {
 		return err
 	}
@@ -52,31 +51,23 @@ func (c *ProcessReadyCheck) AddDependency(d *ProcessReadyCheck) {
 	c.dependencies = append(c.dependencies, d)
 }
 
-func StartProcessReadyCheck(c *ProcessReadyCheck, wg *sync.WaitGroup, s *persistence.Data, comment string) error {
-	entry := s.FindByName(c.Process.Config.Name)
-	if entry != nil {
-		err := c.Process.SynchronizeWithPid(entry.Pid)
-		if err == nil && c.Process.IsRunning() {
-			c.started = true
-			fmt.Printf(output.OkColor("Process '%s' is already running\n", c.Process.Config.Name))
-			wg.Done()
-			return nil
-		}
+func StartProcessReadyCheck(c *ProcessReadyCheck, wg *sync.WaitGroup, comment string) error {
+	runningEnvironInfo, err := process.FindRunningEnvironInfoFromName(c.Process.Config.Name)
+	if err != nil {
+		return err
+	}
+	if runningEnvironInfo != nil {
+		c.started = true
+		fmt.Printf(output.OkColor("Process '%s' is already running\n", c.Process.Config.Name))
+		wg.Done()
+		return nil
 	}
 	for {
 		if c.IsReadyToStart() {
-			err := c.Start()
+			err := c.Start(comment)
 			if err != nil {
-				s.RemoveByName(c.Process.Config.Name)
 				fmt.Printf(output.FailedColor("Failed to start '%s'\n", c.Process.Config.Name))
 			} else {
-				newDataEntry, err := persistence.NewDataEntryFromProcess(c.Process)
-				newDataEntry.Comment = comment
-				newDataEntry.MarkFlag = persistence.MarkedAsStarted
-				if err != nil {
-					return err
-				}
-				s.AddOrUpdateEntry(newDataEntry)
 				fmt.Printf(output.OkColor("Started process '%s'\n", c.Process.Config.Name))
 			}
 			wg.Done()
@@ -91,10 +82,6 @@ func StartCommand(names []string, comment string) error {
 	if len(processConfigs) == 0 {
 		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
 	}
-	persistentState, err := CurrentContext.PersistenceReader.Read()
-	if err != nil {
-		return nil
-	}
 
 	prc := make(map[string]*ProcessReadyCheck)
 	var wg sync.WaitGroup
@@ -103,10 +90,10 @@ func StartCommand(names []string, comment string) error {
 		prc = addToProcessReadyCheckMap(p, prc, &wg)
 	}
 	for _, v := range prc {
-		go StartProcessReadyCheck(v, &wg, persistentState, comment)
+		go StartProcessReadyCheck(v, &wg, comment)
 	}
 	wg.Wait()
-	return CurrentContext.PersistenceWriter.Write(persistentState)
+	return nil
 }
 
 func addToProcessReadyCheckMap(c *config.ProcessConfig, prc map[string]*ProcessReadyCheck, wg *sync.WaitGroup) map[string]*ProcessReadyCheck {
