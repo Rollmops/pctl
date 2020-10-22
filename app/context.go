@@ -29,6 +29,7 @@ func (c *Context) Initialize() error {
 	log.Debugf("Using Config path: %s", configPath)
 	configLoader := config.GetLoaderFromPath(configPath)
 	c.Config, err = configLoader.Load(configPath)
+	c.Config.FillDependsOnInverse()
 	if err != nil {
 		return err
 	}

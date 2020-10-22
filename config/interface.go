@@ -33,6 +33,7 @@ type ProcessConfig struct {
 	PidRetrieveStrategyName string              `yaml:"pidStrategy"`
 	StopStrategy            *StopStrategyConfig `yaml:"stop"`
 	DependsOn               []string            `yaml:"dependsOn"`
+	DependsOnInverse        []string
 }
 
 type Config struct {

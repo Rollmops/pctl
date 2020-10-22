@@ -129,7 +129,7 @@ func TestProcessInfo(t *testing.T) {
 			Command: []string{"sleep", strconv.Itoa(seconds)},
 		}}
 
-		_, err := p.Info()
+		_, err := p.GetPsutilProcess()
 		if err == nil {
 			t.Fatalf("Expect error on non started process")
 		}
@@ -139,9 +139,9 @@ func TestProcessInfo(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		info, err := p.Info()
+		info, err := p.GetPsutilProcess()
 		if err != nil {
-			t.Fatalf("Expect info of started process")
+			t.Fatalf("Expect psutilProcess of started process")
 		}
 
 		cmdline, err = info.Cmdline()

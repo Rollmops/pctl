@@ -14,10 +14,10 @@ import (
 )
 
 type Process struct {
-	Config  *config.ProcessConfig
-	info    *gopsutil.Process
-	cmd     *exec.Cmd
-	environ map[string]string
+	Config        *config.ProcessConfig
+	psutilProcess *gopsutil.Process
+	cmd           *exec.Cmd
+	environ       map[string]string
 }
 
 func (p *Process) SynchronizeWithPid(pid int32) error {
@@ -25,12 +25,12 @@ func (p *Process) SynchronizeWithPid(pid int32) error {
 	if err != nil {
 		return nil
 	}
-	p.info = _p
+	p.psutilProcess = _p
 	return nil
 }
 
 func (p *Process) IsRunning() bool {
-	info, err := p.Info()
+	info, err := p.GetPsutilProcess()
 	if err != nil {
 		return false
 	}
@@ -39,8 +39,11 @@ func (p *Process) IsRunning() bool {
 }
 
 func (p *Process) Pid() (int32, error) {
-	strategy := PidRetrieveStrategies[p.Config.PidRetrieveStrategyName]
-	return strategy.Retrieve(p)
+	runningEnvironInfo, err := FindRunningEnvironInfoFromName(p.Config.Name)
+	if err != nil {
+		return -1, err
+	}
+	return runningEnvironInfo.Pid, nil
 }
 
 func (p *Process) Start(comment string) error {
@@ -88,7 +91,7 @@ func (p *Process) WaitForStarted(maxWaitTime time.Duration, intervalDuration tim
 }
 
 func (p *Process) Stop() error {
-	_process, err := p.Info()
+	_process, err := p.GetPsutilProcess()
 	if err != nil {
 		return err
 	}
@@ -118,15 +121,15 @@ func (p *Process) Kill() error {
 	return p.cmd.Process.Kill()
 }
 
-func (p *Process) Info() (*gopsutil.Process, error) {
-	if p.info != nil {
-		return p.info, nil
+func (p *Process) GetPsutilProcess() (*gopsutil.Process, error) {
+	if p.psutilProcess != nil {
+		return p.psutilProcess, nil
 	}
 	pid, err := p.Pid()
 	if err != nil {
 		return nil, err
 	}
-	info, err := gopsutil.NewProcess(pid)
-	p.info = info
-	return info, err
+	psutilProcess, err := gopsutil.NewProcess(pid)
+	p.psutilProcess = psutilProcess
+	return psutilProcess, err
 }

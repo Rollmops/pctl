@@ -11,23 +11,28 @@ import (
 	"time"
 )
 
-type ProcessReadyCheck struct {
-	Process      *process.Process
-	dependencies []*ProcessReadyCheck
-	started      bool
-}
-
-// Is ready to start, when all dependencies are started
-func (c *ProcessReadyCheck) IsReadyToStart() bool {
-	for _, d := range c.dependencies {
-		if !d.started {
-			return false
-		}
+func StartCommand(names []string, comment string) error {
+	processConfigs := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, false)
+	if len(processConfigs) == 0 {
+		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
 	}
-	return true
+	processStateMap := NewFromProcessConfigs(
+		&processConfigs, func(c *config.ProcessConfig) []string {
+			return c.DependsOn
+		})
+
+	var wg sync.WaitGroup
+	wg.Add(len(*processStateMap))
+
+	for _, processState := range *processStateMap {
+		go processState.StartAsync(&wg, comment)
+	}
+
+	wg.Wait()
+	return nil
 }
 
-func (c *ProcessReadyCheck) Start(comment string) error {
+func (c *ProcessState) Start(comment string) error {
 	err := c.Process.Start(comment)
 	if err != nil {
 		return err
@@ -42,16 +47,7 @@ func (c *ProcessReadyCheck) Start(comment string) error {
 	return nil
 }
 
-func (c *ProcessReadyCheck) AddDependency(d *ProcessReadyCheck) {
-	for _, dep := range c.dependencies {
-		if d == dep {
-			return
-		}
-	}
-	c.dependencies = append(c.dependencies, d)
-}
-
-func StartProcessReadyCheck(c *ProcessReadyCheck, wg *sync.WaitGroup, comment string) error {
+func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string) error {
 	runningEnvironInfo, err := process.FindRunningEnvironInfoFromName(c.Process.Config.Name)
 	if err != nil {
 		return err
@@ -75,40 +71,6 @@ func StartProcessReadyCheck(c *ProcessReadyCheck, wg *sync.WaitGroup, comment st
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-}
-
-func StartCommand(names []string, comment string) error {
-	processConfigs := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, false)
-	if len(processConfigs) == 0 {
-		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
-	}
-
-	prc := make(map[string]*ProcessReadyCheck)
-	var wg sync.WaitGroup
-
-	for _, p := range processConfigs {
-		prc = addToProcessReadyCheckMap(p, prc, &wg)
-	}
-	for _, v := range prc {
-		go StartProcessReadyCheck(v, &wg, comment)
-	}
-	wg.Wait()
-	return nil
-}
-
-func addToProcessReadyCheckMap(c *config.ProcessConfig, prc map[string]*ProcessReadyCheck, wg *sync.WaitGroup) map[string]*ProcessReadyCheck {
-	if prc[c.Name] == nil {
-		wg.Add(1)
-		prc[c.Name] = &ProcessReadyCheck{
-			Process: &process.Process{Config: c},
-			started: false,
-		}
-	}
-	for _, d := range c.DependsOn {
-		prc = addToProcessReadyCheckMap(CurrentContext.Config.FindByName(d), prc, wg)
-		prc[c.Name].AddDependency(prc[d])
-	}
-	return prc
 }
 
 /*

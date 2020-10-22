@@ -32,7 +32,7 @@ func CreateInfoEntries(processConfigs []*config.ProcessConfig) ([]*InfoEntry, er
 			if err != nil {
 				return nil, err
 			}
-			infoEntry.RunningInfo, err = p.Info()
+			infoEntry.RunningInfo, err = p.GetPsutilProcess()
 			if err != nil {
 				return nil, err
 			}

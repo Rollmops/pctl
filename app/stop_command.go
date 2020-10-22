@@ -7,6 +7,7 @@ import (
 	"github.com/Rollmops/pctl/process"
 	log "github.com/sirupsen/logrus"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -15,73 +16,59 @@ func StopCommand(names []string, noWait bool) error {
 	if len(processConfigs) == 0 {
 		return fmt.Errorf("no matching process Config for name specifiers: %s", strings.Join(names, ", "))
 	}
-	for _, processConfig := range processConfigs {
-		for _, dependentOf := range CurrentContext.Config.GetAllDependentOf(processConfig.Name) {
-			if dependentOf.Name != processConfig.Name {
-				_ = output.PrintMessageAndStatus(fmt.Sprintf("Stopping dependency process '%s' of '%s", dependentOf.Name, processConfig.Name),
-					func() output.StatusReturn {
-						return _stopProcess(dependentOf, noWait)
-					},
-				)
-			}
-		}
-		_ = output.PrintMessageAndStatus(fmt.Sprintf("Stopping process '%s", processConfig.Name),
-			func() output.StatusReturn {
-				return _stopProcess(processConfig, noWait)
-			},
-		)
+	processStateMap := NewFromProcessConfigs(
+		&processConfigs, func(c *config.ProcessConfig) []string {
+			return c.DependsOnInverse
+		})
+
+	var wg sync.WaitGroup
+	wg.Add(len(*processStateMap))
+
+	for _, processState := range *processStateMap {
+		go processState.StopAsync(&wg)
 	}
+
+	wg.Wait()
 	return nil
 }
 
-func _stopProcess(processConfig *config.ProcessConfig, noWait bool) output.StatusReturn {
-	runningEnvironInfo, err := process.FindRunningEnvironInfoFromName(processConfig.Name)
+func (c *ProcessState) Stop() error {
+	err := c.Process.Stop()
 	if err != nil {
-		return output.StatusReturn{Error: err}
+		return err
 	}
 
-	if runningEnvironInfo == nil {
-		// TODO warn if we find a process with the same cmdline
-		return output.StatusReturn{OkMessage: "was not running"}
-	} else {
-		p := process.Process{Config: processConfig}
-		err := p.SynchronizeWithPid(runningEnvironInfo.Pid)
-		if err != nil {
-			return output.StatusReturn{Error: err}
-		}
-		if !p.IsRunning() {
-			return output.StatusReturn{WarningMessage: "tracked as running but stopped unexpectedly"}
-		} else {
-			err = p.Stop()
-			if noWait {
-				return output.StatusReturn{Error: err}
-			}
-			maxWaitTime, intervalTime, err := _getMaxWaitTimeAndIntervalDuration(processConfig)
-			if err != nil {
-				return output.StatusReturn{Error: err}
-			}
-			return output.StatusReturn{Error: p.WaitForStop(maxWaitTime, intervalTime)}
-		}
+	err = c.Process.WaitForStop(5*time.Second, 100*time.Millisecond)
+	if err != nil {
+		return err
 	}
+	log.Debugf("Stopped process '%s'", c.Process.Config.Name)
+	c.stopped = true
+	return nil
 }
 
-func _getMaxWaitTimeAndIntervalDuration(p *config.ProcessConfig) (time.Duration, time.Duration, error) {
-	maxWaitTime := 5 * time.Second
-	intervalTime := 100 * time.Millisecond
-	if p.StopStrategy != nil {
-		if p.StopStrategy.MaxWaitTime != "" {
-			maxWaitTime, err := time.ParseDuration(p.StopStrategy.MaxWaitTime)
-			if err != nil {
-				return maxWaitTime, intervalTime, err
-			}
-		}
-		if p.StopStrategy.IntervalTime != "" {
-			intervalTime, err := time.ParseDuration(p.StopStrategy.IntervalTime)
-			if err != nil {
-				return maxWaitTime, intervalTime, err
-			}
-		}
+func (c *ProcessState) StopAsync(wg *sync.WaitGroup) error {
+	runningEnvironInfo, err := process.FindRunningEnvironInfoFromName(c.Process.Config.Name)
+	if err != nil {
+		return err
 	}
-	log.Tracef("max wait time: %d, interval time: %d", maxWaitTime, intervalTime)
-	return maxWaitTime, intervalTime, nil
+	if runningEnvironInfo == nil {
+		c.stopped = true
+		fmt.Printf(output.OkColor("Process '%s' is already stopped\n", c.Process.Config.Name))
+		wg.Done()
+		return nil
+	}
+	for {
+		if c.IsReadyToStop() {
+			err := c.Stop()
+			if err != nil {
+				fmt.Printf(output.FailedColor("Failed to stop '%s' (%s)\n", c.Process.Config.Name, err))
+			} else {
+				fmt.Printf(output.OkColor("Stopped process '%s'\n", c.Process.Config.Name))
+			}
+			wg.Done()
+			return err
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 }

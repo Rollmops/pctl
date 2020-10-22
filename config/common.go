@@ -40,16 +40,15 @@ func (c *Config) CollectProcessConfigsByNameSpecifiers(nameSpecifiers []string, 
 	return returnConfigs
 }
 
-func (c *Config) GetAllDependentOf(name string) []*ProcessConfig {
-	var dependentReturns []*ProcessConfig
-	for _, p := range c.Processes {
-		for _, d := range p.DependsOn {
-			if d == name && !_isInProcessConfigList(name, dependentReturns) {
-				dependentReturns = append(dependentReturns, p)
+func (c *Config) FillDependsOnInverse() {
+	for _, pConfig := range c.Processes {
+		for _, dependsOn := range pConfig.DependsOn {
+			dConfig := c.FindByName(dependsOn)
+			if !_isInList(dConfig.DependsOnInverse, pConfig.Name) {
+				dConfig.DependsOnInverse = append(dConfig.DependsOnInverse, pConfig.Name)
 			}
 		}
 	}
-	return dependentReturns
 }
 
 func _isInProcessConfigList(name string, processConfigs []*ProcessConfig) bool {
