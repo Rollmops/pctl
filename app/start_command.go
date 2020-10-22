@@ -11,8 +11,11 @@ import (
 	"time"
 )
 
-func StartCommand(names []string, comment string) error {
-	processConfigs := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, false)
+func StartCommand(names []string, filters []string, comment string) error {
+	processConfigs, err := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, filters, len(filters) > 0)
+	if err != nil {
+		return err
+	}
 	if len(processConfigs) == 0 {
 		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
 	}
@@ -25,6 +28,7 @@ func StartCommand(names []string, comment string) error {
 	wg.Add(len(*processStateMap))
 
 	for _, processState := range *processStateMap {
+		// TODO handle error
 		go processState.StartAsync(&wg, comment)
 	}
 
@@ -48,7 +52,7 @@ func (c *ProcessState) Start(comment string) error {
 }
 
 func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string) error {
-	runningEnvironInfo, err := process.FindRunningEnvironInfoFromName(c.Process.Config.Name)
+	runningEnvironInfo, err := process.FindRunningInfo(c.Process.Config.Name)
 	if err != nil {
 		return err
 	}

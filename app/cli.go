@@ -12,6 +12,13 @@ import (
 )
 
 func CreateCliApp() (*cli.App, error) {
+	filtersFlag := &cli.StringSliceFlag{
+		Name:     "filter",
+		Aliases:  []string{"f"},
+		Required: false,
+		Usage:    "Filter output based on given label values. Format: <label>=<value>",
+	}
+
 	return &cli.App{
 		Before: func(c *cli.Context) error {
 			logLevelString := c.String("loglevel")
@@ -59,9 +66,14 @@ func CreateCliApp() (*cli.App, error) {
 						Name:  "comment",
 						Usage: "add comment",
 					},
+					filtersFlag,
 				},
 				Action: func(c *cli.Context) error {
-					return StartCommand(c.Args().Slice(), c.String("comment"))
+					filters := c.StringSlice("filter")
+					if c.NArg() == 0 && len(filters) == 0 {
+						return fmt.Errorf("missing process names or filters")
+					}
+					return StartCommand(c.Args().Slice(), filters, c.String("comment"))
 				},
 			},
 			{
@@ -75,12 +87,14 @@ func CreateCliApp() (*cli.App, error) {
 						Usage:   "skip waiting until process stopped",
 						EnvVars: []string{"PCTL_STOP_NO_WAIT"},
 					},
+					filtersFlag,
 				},
 				Action: func(c *cli.Context) error {
-					if c.NArg() == 0 {
-						return fmt.Errorf("missing process names")
+					filters := c.StringSlice("filter")
+					if c.NArg() == 0 && len(filters) == 0 {
+						return fmt.Errorf("missing process names or filters")
 					}
-					return StopCommand(c.Args().Slice(), c.Bool("nowait"))
+					return StopCommand(c.Args().Slice(), filters, c.Bool("nowait"))
 				},
 			},
 			{
@@ -101,13 +115,15 @@ func CreateCliApp() (*cli.App, error) {
 							return "formats: " + strings.Join(keys, ",")
 						}(),
 					},
+					filtersFlag,
 				},
 				Action: func(c *cli.Context) error {
+					filters := c.StringSlice("filter")
 					format := c.String("format")
 					if format == "" {
 						format = "default"
 					}
-					return InfoCommand(c.Args().Slice(), format)
+					return InfoCommand(c.Args().Slice(), format, filters)
 				},
 			},
 		},

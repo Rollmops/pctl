@@ -1,6 +1,8 @@
 processes:
   - name: Test1
-    cmd: [sleep, 1234]
+    cmd: [ sleep, 1234 ]
+    metadata:
+      group: km
   - name: Test2
     cmd:
     - sleep

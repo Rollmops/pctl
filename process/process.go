@@ -30,20 +30,23 @@ func (p *Process) SynchronizeWithPid(pid int32) error {
 }
 
 func (p *Process) IsRunning() bool {
-	info, err := p.GetPsutilProcess()
-	if err != nil {
+	psutilProcess, err := p.GetPsutilProcess()
+	if err != nil || psutilProcess == nil {
 		return false
 	}
-	isRunning, err := info.IsRunning()
+	isRunning, err := psutilProcess.IsRunning()
 	return isRunning && err == nil
 }
 
 func (p *Process) Pid() (int32, error) {
-	runningEnvironInfo, err := FindRunningEnvironInfoFromName(p.Config.Name)
+	runningEnvironInfo, err := FindRunningInfo(p.Config.Name)
 	if err != nil {
 		return -1, err
 	}
-	return runningEnvironInfo.Pid, nil
+	if runningEnvironInfo != nil {
+		return runningEnvironInfo.Pid, nil
+	}
+	return -1, nil
 }
 
 func (p *Process) Start(comment string) error {
@@ -54,15 +57,16 @@ func (p *Process) Start(comment string) error {
 		args = p.Config.Command[1:]
 	}
 
-	infoStr, err := _createRunningInfoJson(comment, p)
+	runningInfoStr, err := _createRunningInfoJson(comment, p)
 	if err != nil {
 		return err
 	}
-	infoEnv := fmt.Sprintf("__PCTL_INFO__=%s", infoStr)
+	infoEnv := fmt.Sprintf("__PCTL_INFO__=%s", runningInfoStr)
 
 	p.cmd = exec.Command(name, args...)
 	p.cmd.Env = os.Environ()
 	p.cmd.Env = append(p.cmd.Env, infoEnv)
+
 	return p.cmd.Start()
 }
 
@@ -84,8 +88,7 @@ func (p *Process) WaitForStarted(maxWaitTime time.Duration, intervalDuration tim
 		return p.IsRunning()
 	}, intervalDuration, uint(attempts))
 	if err != nil {
-		pid, _ := p.Pid()
-		return fmt.Errorf("unable to start process '%s' on PID %d", p.Config.Name, pid)
+		return fmt.Errorf("unable to start process '%s'", p.Config.Name)
 	}
 	return nil
 }
@@ -98,7 +101,6 @@ func (p *Process) Stop() error {
 	stopStrategy := stop_strategy.NewStopStrategyFromConfig(p.Config.StopStrategy)
 	err = stopStrategy.Stop(p.Config, _process)
 	if err != nil {
-
 		return err
 	}
 	return nil
@@ -113,7 +115,6 @@ func (p *Process) WaitForStop(maxWaitTime time.Duration, intervalDuration time.D
 		pid, _ := p.Pid()
 		return fmt.Errorf("unable to stop process '%s' on PID %d", p.Config.Name, pid)
 	}
-
 	return nil
 }
 
@@ -128,6 +129,9 @@ func (p *Process) GetPsutilProcess() (*gopsutil.Process, error) {
 	pid, err := p.Pid()
 	if err != nil {
 		return nil, err
+	}
+	if pid == -1 {
+		return nil, nil
 	}
 	psutilProcess, err := gopsutil.NewProcess(pid)
 	p.psutilProcess = psutilProcess

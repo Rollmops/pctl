@@ -15,7 +15,7 @@ func CreateInfoEntries(processConfigs []*config.ProcessConfig) ([]*InfoEntry, er
 			RunningCommand: processConfig.Command,
 		}
 
-		runningProcessConfig, err := process.FindRunningEnvironInfoFromName(processConfig.Name)
+		runningProcessConfig, err := process.FindRunningInfo(processConfig.Name)
 		if err != nil {
 			return nil, err
 		}

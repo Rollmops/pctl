@@ -18,7 +18,7 @@ type RunningEnvironInfo struct {
 
 var _pctlInfoMap = make(map[string]*RunningEnvironInfo)
 
-func FindRunningEnvironInfoFromName(name string) (*RunningEnvironInfo, error) {
+func FindRunningInfo(name string) (*RunningEnvironInfo, error) {
 	runningEnvironInfo := _pctlInfoMap[name]
 	if runningEnvironInfo != nil {
 		return runningEnvironInfo, nil

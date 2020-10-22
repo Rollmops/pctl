@@ -11,8 +11,12 @@ import (
 	"time"
 )
 
-func StopCommand(names []string, noWait bool) error {
-	processConfigs := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, false)
+//TODO implement noWait
+func StopCommand(names []string, filters []string, noWait bool) error {
+	processConfigs, err := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, filters, len(filters) > 0)
+	if err != nil {
+		return err
+	}
 	if len(processConfigs) == 0 {
 		return fmt.Errorf("no matching process Config for name specifiers: %s", strings.Join(names, ", "))
 	}
@@ -48,7 +52,7 @@ func (c *ProcessState) Stop() error {
 }
 
 func (c *ProcessState) StopAsync(wg *sync.WaitGroup) error {
-	runningEnvironInfo, err := process.FindRunningEnvironInfoFromName(c.Process.Config.Name)
+	runningEnvironInfo, err := process.FindRunningInfo(c.Process.Config.Name)
 	if err != nil {
 		return err
 	}

@@ -23,12 +23,12 @@ func (c *Config) FindByName(name string) *ProcessConfig {
 	return nil
 }
 
-func (c *Config) CollectProcessConfigsByNameSpecifiers(nameSpecifiers []string, allIfNoSpecifiers bool) []*ProcessConfig {
-	if len(nameSpecifiers) == 0 && allIfNoSpecifiers {
-		return c.Processes
-	}
+func (c *Config) CollectProcessConfigsByNameSpecifiers(nameSpecifiers []string, filters []string, allIfNoSpecifiers bool) ([]*ProcessConfig, error) {
 	log.Tracef("Collecting process configs for name specifiers: %v", nameSpecifiers)
 	var returnConfigs []*ProcessConfig
+	if len(nameSpecifiers) == 0 && allIfNoSpecifiers {
+		returnConfigs = c.Processes
+	}
 	for _, nameSpecifier := range nameSpecifiers {
 		for _, p := range c.Processes {
 			if wildcard.Match(nameSpecifier, p.Name) && !_isInProcessConfigList(p.Name, returnConfigs) {
@@ -37,7 +37,33 @@ func (c *Config) CollectProcessConfigsByNameSpecifiers(nameSpecifiers []string, 
 		}
 	}
 	log.Tracef("Found %d process configs for name specifiers: %v", len(returnConfigs), nameSpecifiers)
-	return returnConfigs
+	return getFilteredProcessConfigs(returnConfigs, filters)
+}
+
+func getFilteredProcessConfigs(processConfigs []*ProcessConfig, filters []string) ([]*ProcessConfig, error) {
+	if len(filters) > 0 {
+		var filteredProcessConfigs []*ProcessConfig
+		for _, filter := range filters {
+			fractions := strings.Split(filter, "=")
+			if len(fractions) != 2 {
+				return nil, fmt.Errorf("invalid filter format: '%s'", filter)
+			}
+			for _, pConfig := range processConfigs {
+				if fractions[0] == "label" {
+					if _isInList(pConfig.Labels, fractions[1]) {
+						filteredProcessConfigs = append(filteredProcessConfigs, pConfig)
+					}
+				} else {
+					value := pConfig.Metadata[fractions[0]]
+					if value == fractions[1] {
+						filteredProcessConfigs = append(filteredProcessConfigs, pConfig)
+					}
+				}
+			}
+		}
+		return filteredProcessConfigs, nil
+	}
+	return processConfigs, nil
 }
 
 func (c *Config) FillDependsOnInverse() {

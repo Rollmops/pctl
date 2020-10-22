@@ -9,10 +9,10 @@ import (
 )
 
 func TestStartStopCommand(t *testing.T) {
+	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
 	defer func() {
 		assert.NoError(t, app.Run([]string{"pctl", "stop", "--nowait", "*"}))
 	}()
-	assert.NoError(t, test.SetConfigEnvPath("integration.yaml"))
 
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should not be running")
 
