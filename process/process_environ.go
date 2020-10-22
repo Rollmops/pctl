@@ -26,22 +26,44 @@ func FindRunningEnvironInfoFromName(name string) (*RunningEnvironInfo, error) {
 
 	processIds, _ := gopsutil.Pids()
 	for _, pid := range processIds {
-		runningInfo, err := FindRunningEnvironInfoFromPid(pid)
+		runningInfo, err := traverseToTopParentWithRunningInfo(pid, name)
+
 		if err != nil {
 			return nil, err
 		}
 		if runningInfo != nil {
-
 			_pctlInfoMap[runningInfo.Config.Name] = runningInfo
-			if runningInfo.Config.Name == name {
-				return runningInfo, nil
-			}
+			return runningInfo, nil
 		}
 	}
 	return nil, nil
 }
 
-func FindRunningEnvironInfoFromPid(pid int32) (*RunningEnvironInfo, error) {
+func traverseToTopParentWithRunningInfo(pid int32, name string) (*RunningEnvironInfo, error) {
+	runningInfo, err := findRunningEnvironInfoFromPid(pid)
+	if err != nil {
+		return nil, err
+	}
+	if runningInfo == nil || runningInfo.Config.Name != name {
+		return nil, nil
+	}
+
+	proc, err := gopsutil.NewProcess(pid)
+	if err != nil {
+		return nil, err
+	}
+	ppid, err := proc.Ppid()
+	if err != nil {
+		return nil, err
+	}
+	runningInfoFromParent, err := traverseToTopParentWithRunningInfo(ppid, name)
+	if runningInfoFromParent != nil {
+		return runningInfoFromParent, nil
+	}
+	return runningInfo, nil
+}
+
+func findRunningEnvironInfoFromPid(pid int32) (*RunningEnvironInfo, error) {
 	envFilePath := path.Join("/", "proc", strconv.Itoa(int(pid)), "environ")
 	envContent, err := ioutil.ReadFile(envFilePath)
 	if err == nil {
