@@ -16,7 +16,7 @@ func CreateCliApp() (*cli.App, error) {
 		Name:     "filter",
 		Aliases:  []string{"f"},
 		Required: false,
-		Usage:    "Filter output based on given label values. Format: <label>=<value>",
+		Usage:    "IsRelevantForFilter output based on given label values. Format: <label>=<value>",
 	}
 
 	return &cli.App{

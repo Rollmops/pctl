@@ -44,20 +44,13 @@ func getFilteredProcessConfigs(processConfigs []*ProcessConfig, filters []string
 	if len(filters) > 0 {
 		var filteredProcessConfigs []*ProcessConfig
 		for _, filter := range filters {
-			fractions := strings.Split(filter, "=")
-			if len(fractions) != 2 {
-				return nil, fmt.Errorf("invalid filter format: '%s'", filter)
-			}
 			for _, pConfig := range processConfigs {
-				if fractions[0] == "label" {
-					if _isInList(pConfig.Labels, fractions[1]) {
-						filteredProcessConfigs = append(filteredProcessConfigs, pConfig)
-					}
-				} else {
-					value := pConfig.Metadata[fractions[0]]
-					if value == fractions[1] {
-						filteredProcessConfigs = append(filteredProcessConfigs, pConfig)
-					}
+				isRelevant, err := pConfig.IsRelevantForFilter(filter)
+				if err != nil {
+					return nil, err
+				}
+				if isRelevant {
+					filteredProcessConfigs = append(filteredProcessConfigs, pConfig)
 				}
 			}
 		}

@@ -35,7 +35,6 @@ type ProcessConfig struct {
 	DependsOn               []string            `yaml:"dependsOn"`
 	DependsOnInverse        []string
 	Metadata                map[string]string `yaml:"metadata"`
-	Labels                  []string          `yaml:"labels"`
 }
 
 type Config struct {
