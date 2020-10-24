@@ -14,10 +14,14 @@ import (
 	"time"
 )
 
-func WaitUntilTrue(testFunction func() bool, interval time.Duration, attempts uint) error {
+func WaitUntilTrue(testFunction func() (bool, error), interval time.Duration, attempts uint) error {
 	var _attempt uint = 0
 	for {
-		if result := testFunction(); result == true {
+		result, err := testFunction()
+		if err != nil {
+			return err
+		}
+		if result == true {
 			break
 		}
 		_attempt++

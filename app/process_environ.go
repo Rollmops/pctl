@@ -33,7 +33,7 @@ func (c *Context) collectRunningProcesses() ([]*Process, error) {
 	}
 	var runningProcesses []*Process
 	for _, pid := range processIds {
-		runningInfo, err := traverseToTopParentWithRunningInfo(pid)
+		runningInfo, err := TraverseToTopParentWithRunningInfo(pid)
 		if err != nil {
 			return nil, err
 		}
@@ -55,7 +55,7 @@ func (c *Context) collectRunningProcesses() ([]*Process, error) {
 	return runningProcesses, nil
 }
 
-func traverseToTopParentWithRunningInfo(pid int32) (*RunningEnvironInfo, error) {
+func TraverseToTopParentWithRunningInfo(pid int32) (*RunningEnvironInfo, error) {
 	runningInfo, err := findRunningEnvironInfoFromPid(pid)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func traverseToTopParentWithRunningInfo(pid int32) (*RunningEnvironInfo, error) 
 	if err != nil {
 		return nil, err
 	}
-	runningInfoFromParent, err := traverseToTopParentWithRunningInfo(ppid)
+	runningInfoFromParent, err := TraverseToTopParentWithRunningInfo(ppid)
 	if runningInfoFromParent != nil {
 		return runningInfoFromParent, nil
 	}

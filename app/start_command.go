@@ -42,7 +42,7 @@ func (c *ProcessState) Start(comment string) error {
 		return err
 	}
 
-	err = c.Process.WaitForStarted(5*time.Second, 100*time.Millisecond)
+	err = c.Process.WaitForReady()
 	if err != nil {
 		return err
 	}

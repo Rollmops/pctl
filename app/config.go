@@ -43,13 +43,15 @@ type ProcessConfig struct {
 	DependsOn               []string            `yaml:"dependsOn"`
 	DependsOnInverse        []string
 	Metadata                map[string]string `yaml:"metadata"`
+	ReadinessProbe          string            `yaml:"readinessProbe"`
+	StartupProbe            string            `yaml:"startupProbe"`
 }
 
 type Config struct {
 	ProcessConfigs []*ProcessConfig
 }
 
-var SuffixConfigLoaderMap = map[string]Loader{}
+var SuffixConfigLoaderMap = make(map[string]Loader)
 
 func (c *Config) FindByName(name string) *ProcessConfig {
 	log.Tracef("Getting process config for name '%s'", name)

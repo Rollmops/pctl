@@ -24,6 +24,7 @@ type Info struct {
 type Process struct {
 	Config *ProcessConfig
 	Info   *Info
+	Pid    int32
 }
 
 func (p *Process) IsRunning() bool {
@@ -49,7 +50,40 @@ func (p *Process) Start(comment string) error {
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, infoEnv)
 
-	return cmd.Start()
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	p.Pid = int32(cmd.Process.Pid)
+
+	started, err := StartupProbes[p.Config.StartupProbe].Probe(p)
+	if err != nil {
+		return err
+	}
+	if !started {
+		return fmt.Errorf("startup probe failed")
+	}
+
+	return nil
+}
+
+func (p *Process) WaitForReady() error {
+	readinessProbe := ReadinessProbes[p.Config.ReadinessProbe]
+	// TODO maxWaitTime and IntervalDuration from config
+	maxWaitTime := 5 * time.Second
+	intervalDuration := 100 * time.Millisecond
+	attempts := maxWaitTime / intervalDuration
+	err := WaitUntilTrue(func() (bool, error) {
+		running, err := readinessProbe.Probe(p)
+		if err != nil {
+			return false, err
+		}
+		return running, nil
+	}, intervalDuration, uint(attempts))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func _createRunningInfoJson(comment string, p *Process) (string, error) {
@@ -69,11 +103,6 @@ func _createRunningInfoJson(comment string, p *Process) (string, error) {
 	return string(infoStr), nil
 }
 
-func (p *Process) WaitForStarted(maxWaitTime time.Duration, intervalDuration time.Duration) error {
-	// TODO readiness probe implementation
-	return nil
-}
-
 func (p *Process) Stop() error {
 	stopStrategy := NewStopStrategyFromConfig(p.Config.StopStrategy)
 	err := stopStrategy.Stop(p)
@@ -85,8 +114,8 @@ func (p *Process) Stop() error {
 
 func (p *Process) WaitForStop(maxWaitTime time.Duration, intervalDuration time.Duration) error {
 	attempts := maxWaitTime / intervalDuration
-	err := WaitUntilTrue(func() bool {
-		return !p.IsRunning()
+	err := WaitUntilTrue(func() (bool, error) {
+		return !p.IsRunning(), nil
 	}, intervalDuration, uint(attempts))
 	if err != nil {
 		pid := p.Info.GoPsutilProcess.Pid
