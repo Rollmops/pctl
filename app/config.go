@@ -46,14 +46,14 @@ type ProcessConfig struct {
 }
 
 type Config struct {
-	Processes []*ProcessConfig
+	ProcessConfigs []*ProcessConfig
 }
 
 var SuffixConfigLoaderMap = map[string]Loader{}
 
 func (c *Config) FindByName(name string) *ProcessConfig {
 	log.Tracef("Getting process config for name '%s'", name)
-	for _, p := range c.Processes {
+	for _, p := range c.ProcessConfigs {
 		if p.Name == name {
 			return p
 		}
@@ -65,8 +65,8 @@ func (c *Config) CollectSyncedProcessesByNameSpecifiers(nameSpecifiers []string,
 	log.Tracef("Collecting processes for name specifiers: %v", nameSpecifiers)
 	var returnProcesses []*Process
 	if len(nameSpecifiers) == 0 && allIfNoSpecifiers {
-		for _, pConfig := range c.Processes {
-			p, err := NewFromConfigAndSynced(pConfig)
+		for _, pConfig := range c.ProcessConfigs {
+			p, err := CurrentContext.GetProcessByName(pConfig.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -74,9 +74,9 @@ func (c *Config) CollectSyncedProcessesByNameSpecifiers(nameSpecifiers []string,
 		}
 	}
 	for _, nameSpecifier := range nameSpecifiers {
-		for _, processConfig := range c.Processes {
+		for _, processConfig := range c.ProcessConfigs {
 			if wildcard.Match(nameSpecifier, processConfig.Name) && !_isInProcessList(processConfig.Name, returnProcesses) {
-				p, err := NewFromConfigAndSynced(processConfig)
+				p, err := CurrentContext.GetProcessByName(processConfig.Name)
 				if err != nil {
 					return nil, err
 				}
@@ -112,7 +112,7 @@ func getFilteredProcesses(processes []*Process, filterPatterns []string) ([]*Pro
 }
 
 func (c *Config) FillDependsOnInverse() {
-	for _, pConfig := range c.Processes {
+	for _, pConfig := range c.ProcessConfigs {
 		for _, dependsOn := range pConfig.DependsOn {
 			dConfig := c.FindByName(dependsOn)
 			if !_isInList(dConfig.DependsOnInverse, pConfig.Name) {

@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	gopsutil "github.com/shirou/gopsutil/process"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"path"
 	"strconv"
@@ -16,35 +17,50 @@ type RunningEnvironInfo struct {
 	Md5Hashes map[string]string
 }
 
-var _pctlInfoMap = make(map[string]*RunningEnvironInfo)
-
-func FindRunningInfo(name string) (*RunningEnvironInfo, error) {
-	runningEnvironInfo := _pctlInfoMap[name]
-	if runningEnvironInfo != nil {
-		return runningEnvironInfo, nil
+func (c *Context) SyncRunningProcesses() error {
+	runningProcesses, err := c.collectRunningProcesses()
+	if err != nil {
+		return err
 	}
+	c.RunningProcesses = runningProcesses
+	return nil
+}
 
-	processIds, _ := gopsutil.Pids()
+func (c *Context) collectRunningProcesses() ([]*Process, error) {
+	processIds, err := gopsutil.Pids()
+	if err != nil {
+		return nil, err
+	}
+	var runningProcesses []*Process
 	for _, pid := range processIds {
-		runningInfo, err := traverseToTopParentWithRunningInfo(pid, name)
-
+		runningInfo, err := traverseToTopParentWithRunningInfo(pid)
 		if err != nil {
 			return nil, err
 		}
 		if runningInfo != nil {
-			_pctlInfoMap[runningInfo.Config.Name] = runningInfo
-			return runningInfo, nil
+			config := c.Config.FindByName(runningInfo.Config.Name)
+			if config == nil {
+				logrus.Warningf("Unable to find config for running process '%s' with process id %d",
+					runningInfo.Config.Name, pid)
+				continue
+			}
+			p := Process{Config: config}
+			err = p.SetRunningInfo(runningInfo)
+			if err != nil {
+				return nil, err
+			}
+			runningProcesses = append(runningProcesses, &p)
 		}
 	}
-	return nil, nil
+	return runningProcesses, nil
 }
 
-func traverseToTopParentWithRunningInfo(pid int32, name string) (*RunningEnvironInfo, error) {
+func traverseToTopParentWithRunningInfo(pid int32) (*RunningEnvironInfo, error) {
 	runningInfo, err := findRunningEnvironInfoFromPid(pid)
 	if err != nil {
 		return nil, err
 	}
-	if runningInfo == nil || runningInfo.Config.Name != name {
+	if runningInfo == nil {
 		return nil, nil
 	}
 
@@ -56,7 +72,7 @@ func traverseToTopParentWithRunningInfo(pid int32, name string) (*RunningEnviron
 	if err != nil {
 		return nil, err
 	}
-	runningInfoFromParent, err := traverseToTopParentWithRunningInfo(ppid, name)
+	runningInfoFromParent, err := traverseToTopParentWithRunningInfo(ppid)
 	if runningInfoFromParent != nil {
 		return runningInfoFromParent, nil
 	}

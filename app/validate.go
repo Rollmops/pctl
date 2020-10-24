@@ -7,7 +7,7 @@ import (
 func (c *Config) Validate() error {
 	var processNames []string
 
-	for _, p := range c.Processes {
+	for _, p := range c.ProcessConfigs {
 		if _isInList(processNames, p.Name) {
 			return fmt.Errorf("found duplicate process name %s", p.Name)
 		}

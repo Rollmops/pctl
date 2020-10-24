@@ -7,12 +7,12 @@ import (
 
 func ValidateAcyclicDependencies() error {
 	mapping := make(map[string]int)
-	for i, _config := range CurrentContext.Config.Processes {
+	for i, _config := range CurrentContext.Config.ProcessConfigs {
 		mapping[_config.Name] = i
 	}
 
-	gm := graph.New(len(CurrentContext.Config.Processes))
-	for _, _config := range CurrentContext.Config.Processes {
+	gm := graph.New(len(CurrentContext.Config.ProcessConfigs))
+	for _, _config := range CurrentContext.Config.ProcessConfigs {
 		for _, n := range _config.DependsOn {
 			gm.Add(mapping[_config.Name], mapping[n])
 		}

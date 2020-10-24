@@ -4,5 +4,4 @@ processes:
   - name: spserver
     cmd: [spserver]
     metadata:
-      labels:
-        group: km
+      group: km

@@ -23,7 +23,7 @@ func TestLoadConfigOk(t *testing.T) {
 
 	_config, err := yamlLoader.Load(testConfigPath)
 	assert.NoError(t, err)
-	assert.Equal(t, len(_config.Processes), 2)
+	assert.Equal(t, len(_config.ProcessConfigs), 2)
 }
 
 func TestCircleInclude(t *testing.T) {
@@ -43,7 +43,7 @@ func TestLoadConfigGlobIncludes(t *testing.T) {
 
 	_config, _ := yamlLoader.Load(testConfigPath)
 
-	if processCount := len(_config.Processes); processCount != 3 {
+	if processCount := len(_config.ProcessConfigs); processCount != 3 {
 		t.Fatalf("Expected process count of 3, got %d", processCount)
 	}
 }

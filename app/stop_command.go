@@ -17,10 +17,13 @@ func StopCommand(names []string, filters []string, noWait bool) error {
 	if len(processes) == 0 {
 		return fmt.Errorf("no matching process Config for name specifiers: %s", strings.Join(names, ", "))
 	}
-	processStateMap := NewProcessStateMap(
-		&processes, func(p *Process) []string {
+	processStateMap, err := NewProcessStateMap(
+		processes, func(p *Process) []string {
 			return p.Config.DependsOnInverse
 		})
+	if err != nil {
+		return err
+	}
 
 	var wg sync.WaitGroup
 	wg.Add(len(*processStateMap))

@@ -26,15 +26,6 @@ type Process struct {
 	Info   *Info
 }
 
-func NewFromConfigAndSynced(c *ProcessConfig) (*Process, error) {
-	p := &Process{Config: c}
-	err := p.SyncProcessInfo()
-	if err != nil {
-		return nil, err
-	}
-	return p, nil
-}
-
 func (p *Process) IsRunning() bool {
 	if p.Info != nil {
 		isRunning, err := p.Info.GoPsutilProcess.IsRunning()
@@ -108,11 +99,8 @@ func (p *Process) Kill() error {
 	return p.Info.GoPsutilProcess.SendSignal(syscall.SIGKILL)
 }
 
-func (p *Process) SyncProcessInfo() error {
-	runningInfo, err := FindRunningInfo(p.Config.Name)
-	if err != nil {
-		return err
-	}
+func (p *Process) SetRunningInfo(runningInfo *RunningEnvironInfo) error {
+	logrus.Tracef("Syncing process info for '%s'", p.Config.Name)
 	if runningInfo != nil {
 		dirtyHashes, err := collectDirtyHashes(&p.Config.Command, runningInfo)
 		if err != nil {

@@ -35,15 +35,19 @@ func (c *ProcessState) AddDependency(d *ProcessState) {
 	c.dependencies = append(c.dependencies, d)
 }
 
-func NewProcessStateMap(processes *[]*Process, dependencyGetter func(*Process) []string) *map[string]*ProcessState {
+func NewProcessStateMap(processes []*Process, dependencyGetter func(*Process) []string) (*map[string]*ProcessState, error) {
 	processStateMap := make(map[string]*ProcessState)
-	for _, p := range *processes {
-		processStateMap = addToProcessStateMap(p, processes, processStateMap, dependencyGetter)
+	var err error
+	for _, p := range processes {
+		processStateMap, err = addToProcessStateMap(p, processStateMap, dependencyGetter)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return &processStateMap
+	return &processStateMap, nil
 }
 
-func addToProcessStateMap(p *Process, processes *[]*Process, processStateMap map[string]*ProcessState, dependencyGetter func(*Process) []string) map[string]*ProcessState {
+func addToProcessStateMap(p *Process, processStateMap map[string]*ProcessState, dependencyGetter func(*Process) []string) (map[string]*ProcessState, error) {
 	if processStateMap[p.Config.Name] == nil {
 		processStateMap[p.Config.Name] = &ProcessState{
 			Process: p,
@@ -51,17 +55,15 @@ func addToProcessStateMap(p *Process, processes *[]*Process, processStateMap map
 		}
 	}
 	for _, d := range dependencyGetter(p) {
-		processStateMap = addToProcessStateMap(findProcessByName(d, processes), processes, processStateMap, dependencyGetter)
+		depProcess, err := CurrentContext.GetProcessByName(d)
+		if err != nil {
+			return nil, err
+		}
+		processStateMap, err = addToProcessStateMap(depProcess, processStateMap, dependencyGetter)
+		if err != nil {
+			return nil, err
+		}
 		processStateMap[p.Config.Name].AddDependency(processStateMap[d])
 	}
-	return processStateMap
-}
-
-func findProcessByName(name string, processes *[]*Process) *Process {
-	for _, p := range *processes {
-		if p.Config.Name == name {
-			return p
-		}
-	}
-	return nil
+	return processStateMap, nil
 }

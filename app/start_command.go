@@ -16,10 +16,13 @@ func StartCommand(names []string, filters []string, comment string) error {
 	if len(processes) == 0 {
 		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
 	}
-	processStateMap := NewProcessStateMap(
-		&processes, func(p *Process) []string {
+	processStateMap, err := NewProcessStateMap(
+		processes, func(p *Process) []string {
 			return p.Config.DependsOn
 		})
+	if err != nil {
+		return err
+	}
 
 	var wg sync.WaitGroup
 	wg.Add(len(*processStateMap))

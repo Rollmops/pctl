@@ -25,7 +25,7 @@ func TestStartStopCommand(t *testing.T) {
 	assert.False(t, test.IsCommandRunning("sleep 1234"), "'sleep 1234' should be stopped")
 }
 
-func TestStartCommand(t *testing.T) {
+func TestStartOrderCommand(t *testing.T) {
 	defer func() {
 		assert.NoError(t, app.Run([]string{"pctl", "stop", "--nowait", "*"}))
 	}()
@@ -83,22 +83,4 @@ func TestAppInfoJsonFlatCommand(t *testing.T) {
 	var obj interface{}
 	assert.NoError(t, json.Unmarshal([]byte(out), &obj))
 	assert.Equal(t, 2, len(obj.([]interface{})))
-}
-
-func TestValidatePersistenceConfigDiscrepancyStillRunning(t *testing.T) {
-	assert.NoError(t, test.SetConfigEnvPath("check_test", "step1.yaml"))
-
-	assert.False(t, test.IsCommandRunning("sleep 5555"), "'sleep 5555' should not be running")
-
-	err := app.Run([]string{"pctl", "start", "Test1"})
-	assert.NoError(t, err)
-	assert.True(t, test.IsCommandRunning("sleep 5555"), "'sleep 5555' should be running")
-
-	assert.NoError(t, test.SetConfigEnvPath("check_test", "step2.yaml"))
-
-	err = app.Run([]string{"pctl", "info"})
-	assert.Error(t, err)
-
-	assert.Regexp(t, "found tracked running process 'Test1' with pid \\d+ that could not be found in config", err.Error())
-
 }

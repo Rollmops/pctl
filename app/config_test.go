@@ -14,7 +14,7 @@ func (t *TestLoader) Load(_ string) (*app.Config, error) {
 
 func TestFindByName(t *testing.T) {
 	_config := app.Config{
-		Processes: []*app.ProcessConfig{
+		ProcessConfigs: []*app.ProcessConfig{
 			{
 				Name:    "p1",
 				Command: []string{"sleep", "10"},
@@ -46,7 +46,7 @@ func TestGetLoaderFromPathYaml(t *testing.T) {
 
 func TestValidateConfig(t *testing.T) {
 	_config := app.Config{
-		Processes: []*app.ProcessConfig{
+		ProcessConfigs: []*app.ProcessConfig{
 			{
 				Name:    "p1",
 				Command: []string{"sleep 1"},
@@ -67,7 +67,7 @@ func TestValidateConfig(t *testing.T) {
 
 func TestInvalidCmdLength(t *testing.T) {
 	_config := app.Config{
-		Processes: []*app.ProcessConfig{
+		ProcessConfigs: []*app.ProcessConfig{
 			{
 				Name:    "p1",
 				Command: []string{},
