@@ -27,7 +27,7 @@ type JsonConsoleOutput struct {
 	flat   bool
 }
 
-type RunningInfo struct {
+type ProcessInfo struct {
 	Pid              int32                   `json:"pid"`
 	Cwd              string                  `json:"cwd"`
 	IsRunning        bool                    `json:"isRunning"`
@@ -48,14 +48,14 @@ type JsonInfoEntry struct {
 	RunningCommand       []string     `json:"runningCommand"`
 	IsRunning            bool         `json:"isRunning"`
 	ConfigCommandChanged bool         `json:"configCommandChanged"`
-	Info                 *RunningInfo `json:"info"`
+	Info                 *ProcessInfo `json:"info"`
 }
 
 func (j *JsonConsoleOutput) SetWriter(writer *os.File) {
 	j.writer = writer
 }
 
-func (j *JsonConsoleOutput) Write(infoEntries []*InfoEntry) error {
+func (j *JsonConsoleOutput) Write(infoEntries []*Info) error {
 
 	var jsonInfoEntries []*JsonInfoEntry
 
@@ -97,58 +97,58 @@ func (j *JsonConsoleOutput) Write(infoEntries []*InfoEntry) error {
 	}
 }
 
-func getRunningInfo(infoEntry *InfoEntry) (*RunningInfo, error) {
-	if infoEntry.RunningInfo == nil {
+func getRunningInfo(info *Info) (*ProcessInfo, error) {
+	if info.RunningInfo == nil {
 		return nil, nil
 	}
-	var runningInfo *RunningInfo
+	var runningInfo *ProcessInfo
 
-	cwd, err := infoEntry.RunningInfo.Cwd()
+	cwd, err := info.RunningInfo.Cwd()
 	if err != nil {
 		return nil, err
 	}
-	isRunning, err := infoEntry.RunningInfo.IsRunning()
-	if err != nil {
-		return nil, err
-	}
-
-	cpuPercent, err := infoEntry.RunningInfo.CPUPercent()
+	isRunning, err := info.RunningInfo.IsRunning()
 	if err != nil {
 		return nil, err
 	}
 
-	connections, err := infoEntry.RunningInfo.Connections()
+	cpuPercent, err := info.RunningInfo.CPUPercent()
 	if err != nil {
 		return nil, err
 	}
-	command, err := infoEntry.RunningInfo.CmdlineSlice()
+
+	connections, err := info.RunningInfo.Connections()
 	if err != nil {
 		return nil, err
 	}
-	memoryInfo, err := infoEntry.RunningInfo.MemoryInfo()
+	command, err := info.RunningInfo.CmdlineSlice()
 	if err != nil {
 		return nil, err
 	}
-	exe, err := infoEntry.RunningInfo.Exe()
+	memoryInfo, err := info.RunningInfo.MemoryInfo()
 	if err != nil {
 		return nil, err
 	}
-	createTime, err := infoEntry.RunningInfo.CreateTime()
+	exe, err := info.RunningInfo.Exe()
 	if err != nil {
 		return nil, err
 	}
-	username, err := infoEntry.RunningInfo.Username()
+	createTime, err := info.RunningInfo.CreateTime()
 	if err != nil {
 		return nil, err
 	}
-	terminal, err := infoEntry.RunningInfo.Terminal()
+	username, err := info.RunningInfo.Username()
+	if err != nil {
+		return nil, err
+	}
+	terminal, err := info.RunningInfo.Terminal()
 	if err != nil {
 		return nil, err
 	}
 	createTimeString := time.Unix(createTime/1000, 0)
-	if infoEntry.IsRunning {
-		runningInfo = &RunningInfo{
-			Pid:              infoEntry.RunningInfo.Pid,
+	if info.IsRunning {
+		runningInfo = &ProcessInfo{
+			Pid:              info.RunningInfo.Pid,
 			Cwd:              cwd,
 			IsRunning:        isRunning,
 			CPUPercent:       cpuPercent,

@@ -41,7 +41,7 @@ func (o *DefaultConsoleOutput) SetWriter(writer *os.File) {
 	o.Writer = writer
 }
 
-func (o *DefaultConsoleOutput) Write(infoEntries []*InfoEntry) error {
+func (o *DefaultConsoleOutput) Write(infoEntries []*Info) error {
 	tw := table.NewWriter()
 	// append a header row
 	tw.AppendHeader(table.Row{"Name", "Status", "Pid", "Uptime", "Rss", "Vms", "Command"})
@@ -89,13 +89,8 @@ func (o *DefaultConsoleOutput) Write(infoEntries []*InfoEntry) error {
 		fmt.Sprintf("Σ %s", common.ByteCountIEC(rssSum)),
 	})
 	tw.SetAutoIndex(true)
-	// sort by last name and then by salary
-	//tw.SortBy([]table.SortBy{{Name: "", Mode: table.Dsc}, {Name: "Salary", Mode: table.AscNumeric}})
-	// use a ready-to-use Style
 	tw.SetStyle(o.Style)
-	// customize the Style and change some stuff
 	tw.Style().Format.Header = text.FormatTitle
-	//tw.Style().Format.Row = text.FormatLower
 	tw.Style().Format.Footer = text.FormatTitle
 	tw.Style().Options.SeparateColumns = false
 
@@ -103,10 +98,10 @@ func (o *DefaultConsoleOutput) Write(infoEntries []*InfoEntry) error {
 	return err
 }
 
-func _getUptime(entry *InfoEntry, nowTime time.Time) string {
+func _getUptime(info *Info, nowTime time.Time) string {
 	var uptime string
-	if entry.RunningInfo != nil {
-		createTime, err := entry.RunningInfo.CreateTime()
+	if info.RunningInfo != nil {
+		createTime, err := info.RunningInfo.CreateTime()
 		if err != nil {
 			uptime = "error"
 		}
@@ -119,7 +114,7 @@ func _getUptime(entry *InfoEntry, nowTime time.Time) string {
 	return uptime
 }
 
-func _getStatusString(entry *InfoEntry) string {
+func _getStatusString(entry *Info) string {
 	var statusString string
 	if entry.IsRunning {
 		statusString = OkColor("Running")

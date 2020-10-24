@@ -16,7 +16,7 @@ func TestDefaultConsoleOutput(t *testing.T) {
 		Style:  table.StyleDefault,
 	}
 
-	entries := []*output.InfoEntry{
+	entries := []*output.Info{
 		{
 			Name:          "Process1",
 			ConfigCommand: []string{"sleep", "1"},

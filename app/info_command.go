@@ -17,7 +17,7 @@ func InfoCommand(names []string, format string, filters []string) error {
 		return err
 	}
 
-	infoEntries, err := output.CreateInfoEntries(processConfigs)
+	infoEntries, err := output.CreateInfos(processConfigs)
 	if err != nil {
 		return err
 	}

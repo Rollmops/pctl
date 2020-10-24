@@ -4,12 +4,23 @@ import (
 	"github.com/Rollmops/pctl/common"
 	"github.com/Rollmops/pctl/config"
 	"github.com/Rollmops/pctl/process"
+	gopsutil "github.com/shirou/gopsutil/process"
 )
 
-func CreateInfoEntries(processConfigs []*config.ProcessConfig) ([]*InfoEntry, error) {
-	var infoEntries []*InfoEntry
+type Info struct {
+	Name                 string
+	Comment              string
+	ConfigCommand        []string
+	RunningCommand       []string
+	IsRunning            bool
+	ConfigCommandChanged bool
+	RunningInfo          *gopsutil.Process
+}
+
+func CreateInfos(processConfigs []*config.ProcessConfig) ([]*Info, error) {
+	var infos []*Info
 	for _, processConfig := range processConfigs {
-		infoEntry := &InfoEntry{
+		infoEntry := &Info{
 			Name:           processConfig.Name,
 			ConfigCommand:  processConfig.Command,
 			RunningCommand: processConfig.Command,
@@ -42,7 +53,7 @@ func CreateInfoEntries(processConfigs []*config.ProcessConfig) ([]*InfoEntry, er
 			}
 		}
 
-		infoEntries = append(infoEntries, infoEntry)
+		infos = append(infos, infoEntry)
 	}
-	return infoEntries, nil
+	return infos, nil
 }
