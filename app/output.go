@@ -1,8 +1,9 @@
-package output
+package app
 
 import (
 	"fmt"
 	"github.com/fatih/color"
+	"os"
 )
 
 var FormatMap = map[string]Output{}
@@ -15,6 +16,11 @@ type StatusReturn struct {
 	OkMessage      string
 	WarningMessage string
 	Error          error
+}
+
+type Output interface {
+	Write([]*Process) error
+	SetWriter(file *os.File)
 }
 
 func PrintMessageAndStatus(message string, function func() StatusReturn) error {

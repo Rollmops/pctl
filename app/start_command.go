@@ -2,9 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/Rollmops/pctl/config"
-	"github.com/Rollmops/pctl/output"
-	"github.com/Rollmops/pctl/process"
 	log "github.com/sirupsen/logrus"
 	"strings"
 	"sync"
@@ -12,16 +9,16 @@ import (
 )
 
 func StartCommand(names []string, filters []string, comment string) error {
-	processConfigs, err := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, filters, len(filters) > 0)
+	processes, err := CurrentContext.Config.CollectSyncedProcessesByNameSpecifiers(names, filters, len(filters) > 0)
 	if err != nil {
 		return err
 	}
-	if len(processConfigs) == 0 {
+	if len(processes) == 0 {
 		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
 	}
-	processStateMap := NewFromProcessConfigs(
-		&processConfigs, func(c *config.ProcessConfig) []string {
-			return c.DependsOn
+	processStateMap := NewProcessStateMap(
+		&processes, func(p *Process) []string {
+			return p.Config.DependsOn
 		})
 
 	var wg sync.WaitGroup
@@ -52,13 +49,9 @@ func (c *ProcessState) Start(comment string) error {
 }
 
 func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string) error {
-	runningEnvironInfo, err := process.FindRunningInfo(c.Process.Config.Name)
-	if err != nil {
-		return err
-	}
-	if runningEnvironInfo != nil {
+	if c.Process.IsRunning() {
 		c.started = true
-		fmt.Printf(output.OkColor("Process '%s' is already running\n", c.Process.Config.Name))
+		fmt.Printf(WarningColor("Process '%s' is already running\n", c.Process.Config.Name))
 		wg.Done()
 		return nil
 	}
@@ -66,9 +59,9 @@ func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string) error {
 		if c.IsReadyToStart() {
 			err := c.Start(comment)
 			if err != nil {
-				fmt.Printf(output.FailedColor("Failed to start '%s' (%s)\n", c.Process.Config.Name, err))
+				fmt.Printf(FailedColor("Failed to start '%s' (%s)\n", c.Process.Config.Name, err))
 			} else {
-				fmt.Printf(output.OkColor("Started process '%s'\n", c.Process.Config.Name))
+				fmt.Printf(OkColor("Started process '%s'\n", c.Process.Config.Name))
 			}
 			wg.Done()
 			return err

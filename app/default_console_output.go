@@ -1,8 +1,7 @@
-package output
+package app
 
 import (
 	"fmt"
-	"github.com/Rollmops/pctl/common"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
 	"io"
@@ -41,7 +40,7 @@ func (o *DefaultConsoleOutput) SetWriter(writer *os.File) {
 	o.Writer = writer
 }
 
-func (o *DefaultConsoleOutput) Write(infoEntries []*Info) error {
+func (o *DefaultConsoleOutput) Write(processes []*Process) error {
 	tw := table.NewWriter()
 	// append a header row
 	tw.AppendHeader(table.Row{"Name", "Status", "Pid", "Uptime", "Rss", "Vms", "Command"})
@@ -50,43 +49,44 @@ func (o *DefaultConsoleOutput) Write(infoEntries []*Info) error {
 	runningCount := 0
 	var rssSum uint64
 	nowTime := time.Now()
-	for _, entry := range infoEntries {
-		if entry.IsRunning {
-			runningCount++
-		}
-		uptime := _getUptime(entry, nowTime)
+	for _, p := range processes {
 		pid := ""
 		rss := ""
 		vms := ""
-		if entry.RunningInfo != nil {
-			pid = strconv.Itoa(int(entry.RunningInfo.Pid))
-			memoryInfo, err := entry.RunningInfo.MemoryInfo()
+		uptime := ""
+		runningCommand := ""
+		if p.IsRunning() {
+			runningCount++
+			uptime = _getUptime(p, nowTime)
+			pid = strconv.Itoa(int(p.Info.GoPsutilProcess.Pid))
+			memoryInfo, err := p.Info.GoPsutilProcess.MemoryInfo()
 			if err != nil {
 				rss = "error"
 				vms = "error"
 			} else {
 				rssSum += memoryInfo.RSS
-				rss = common.ByteCountIEC(memoryInfo.RSS)
-				vms = common.ByteCountIEC(memoryInfo.VMS)
+				rss = ByteCountIEC(memoryInfo.RSS)
+				vms = ByteCountIEC(memoryInfo.VMS)
 			}
+			runningCommand = strings.Join(p.Info.RunningCommand, " ")
 		}
 
 		tw.AppendRow(table.Row{
-			entry.Name,
-			_getStatusString(entry),
+			p.Config.Name,
+			_getStatusString(p),
 			pid,
 			uptime,
 			rss,
 			vms,
-			strings.Join(entry.RunningCommand, " "),
+			runningCommand,
 		})
 	}
 	tw.AppendFooter(table.Row{
 		"",
-		fmt.Sprintf("Running: %d/%d", runningCount, len(infoEntries)),
+		fmt.Sprintf("Running: %d/%d", runningCount, len(processes)),
 		"",
 		"",
-		fmt.Sprintf("Σ %s", common.ByteCountIEC(rssSum)),
+		fmt.Sprintf("Σ %s", ByteCountIEC(rssSum)),
 	})
 	tw.SetAutoIndex(true)
 	tw.SetStyle(o.Style)
@@ -98,25 +98,23 @@ func (o *DefaultConsoleOutput) Write(infoEntries []*Info) error {
 	return err
 }
 
-func _getUptime(info *Info, nowTime time.Time) string {
+func _getUptime(p *Process, nowTime time.Time) string {
 	var uptime string
-	if info.RunningInfo != nil {
-		createTime, err := info.RunningInfo.CreateTime()
-		if err != nil {
-			uptime = "error"
-		}
-		uptimeInt := nowTime.Sub(time.Unix(createTime/1000, 0))
-		uptime, err = common.DurationToString(uptimeInt)
-		if err != nil {
-			uptime = "error"
-		}
+	createTime, err := p.Info.GoPsutilProcess.CreateTime()
+	if err != nil {
+		uptime = "error"
+	}
+	uptimeInt := nowTime.Sub(time.Unix(createTime/1000, 0))
+	uptime, err = DurationToString(uptimeInt)
+	if err != nil {
+		uptime = "error"
 	}
 	return uptime
 }
 
-func _getStatusString(entry *Info) string {
+func _getStatusString(p *Process) string {
 	var statusString string
-	if entry.IsRunning {
+	if p.IsRunning() {
 		statusString = OkColor("Running")
 	} else {
 		statusString = FailedColor("Stopped")

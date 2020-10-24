@@ -2,24 +2,19 @@ package app
 
 import (
 	"fmt"
-	"github.com/Rollmops/pctl/output"
 )
 
 func InfoCommand(names []string, format string, filters []string) error {
-	o := output.FormatMap[format]
+	o := FormatMap[format]
 	if o == nil {
 		return fmt.Errorf("unknown format: %s", format)
 	}
 	o.SetWriter(CurrentContext.OutputWriter)
 
-	processConfigs, err := CurrentContext.Config.CollectProcessConfigsByNameSpecifiers(names, filters, true)
+	processes, err := CurrentContext.Config.CollectSyncedProcessesByNameSpecifiers(names, filters, true)
 	if err != nil {
 		return err
 	}
 
-	infoEntries, err := output.CreateInfos(processConfigs)
-	if err != nil {
-		return err
-	}
-	return o.Write(infoEntries)
+	return o.Write(processes)
 }

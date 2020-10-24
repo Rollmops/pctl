@@ -1,7 +1,7 @@
-package output_test
+package app_test
 
 import (
-	"github.com/Rollmops/pctl/output"
+	"github.com/Rollmops/pctl/app"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -11,18 +11,20 @@ import (
 
 func TestDefaultConsoleOutput(t *testing.T) {
 	r, w, _ := os.Pipe()
-	o := output.DefaultConsoleOutput{
+	o := app.DefaultConsoleOutput{
 		Writer: w,
 		Style:  table.StyleDefault,
 	}
 
-	entries := []*output.Info{
+	processes := []*app.Process{
 		{
-			Name:          "Process1",
-			ConfigCommand: []string{"sleep", "1"},
+			Config: &app.ProcessConfig{
+				Name:    "Process1",
+				Command: []string{"sleep", "1"},
+			},
 		},
 	}
-	assert.NoError(t, o.Write(entries))
+	assert.NoError(t, o.Write(processes))
 	assert.NoError(t, w.Close())
 	out, err := ioutil.ReadAll(r)
 	assert.NoError(t, err)

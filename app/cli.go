@@ -2,13 +2,11 @@ package app
 
 import (
 	"fmt"
-	"github.com/Rollmops/pctl/output"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
 	"os"
 	"strings"
-
-	"github.com/urfave/cli/v2"
 )
 
 func CreateCliApp() (*cli.App, error) {
@@ -108,8 +106,8 @@ func CreateCliApp() (*cli.App, error) {
 						Required: false,
 						Value:    "default",
 						Usage: func() string {
-							keys := make([]string, 0, len(output.FormatMap))
-							for k := range output.FormatMap {
+							keys := make([]string, 0, len(FormatMap))
+							for k := range FormatMap {
 								keys = append(keys, k)
 							}
 							return "formats: " + strings.Join(keys, ",")

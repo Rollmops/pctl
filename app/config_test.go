@@ -1,20 +1,20 @@
-package config_test
+package app_test
 
 import (
-	"github.com/Rollmops/pctl/config"
+	"github.com/Rollmops/pctl/app"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 type TestLoader struct{}
 
-func (t *TestLoader) Load(_ string) (*config.Config, error) {
+func (t *TestLoader) Load(_ string) (*app.Config, error) {
 	return nil, nil
 }
 
 func TestFindByName(t *testing.T) {
-	_config := config.Config{
-		Processes: []*config.ProcessConfig{
+	_config := app.Config{
+		Processes: []*app.ProcessConfig{
 			{
 				Name:    "p1",
 				Command: []string{"sleep", "10"},
@@ -39,14 +39,14 @@ func TestFindByName(t *testing.T) {
 }
 
 func TestGetLoaderFromPathYaml(t *testing.T) {
-	config.SuffixConfigLoaderMap["sfx"] = &TestLoader{}
-	loader := config.GetLoaderFromPath("/path/to/config.sfx")
+	app.SuffixConfigLoaderMap["sfx"] = &TestLoader{}
+	loader := app.GetLoaderFromPath("/path/to/config.sfx")
 	assert.IsType(t, (*TestLoader)(nil), loader)
 }
 
 func TestValidateConfig(t *testing.T) {
-	_config := config.Config{
-		Processes: []*config.ProcessConfig{
+	_config := app.Config{
+		Processes: []*app.ProcessConfig{
 			{
 				Name:    "p1",
 				Command: []string{"sleep 1"},
@@ -66,8 +66,8 @@ func TestValidateConfig(t *testing.T) {
 }
 
 func TestInvalidCmdLength(t *testing.T) {
-	_config := config.Config{
-		Processes: []*config.ProcessConfig{
+	_config := app.Config{
+		Processes: []*app.ProcessConfig{
 			{
 				Name:    "p1",
 				Command: []string{},

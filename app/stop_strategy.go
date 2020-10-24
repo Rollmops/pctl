@@ -1,16 +1,14 @@
-package stop_strategy
+package app
 
 import (
-	"github.com/Rollmops/pctl/config"
-	gopsutil "github.com/shirou/gopsutil/process"
 	"syscall"
 )
 
 type StopStrategy interface {
-	Stop(*config.ProcessConfig, *gopsutil.Process) error
+	Stop(process *Process) error
 }
 
-func NewStopStrategyFromConfig(c *config.StopStrategyConfig) StopStrategy {
+func NewStopStrategyFromConfig(c *StopStrategyConfig) StopStrategy {
 	if c == nil {
 		return _getDefaultStopStrategy()
 	}
@@ -29,7 +27,7 @@ func NewStopStrategyFromConfig(c *config.StopStrategyConfig) StopStrategy {
 
 func _getDefaultStopStrategy() StopStrategy {
 	return &SignalStopStrategy{
-		SignalStopStrategyConfig: config.SignalStopStrategyConfig{
+		SignalStopStrategyConfig: SignalStopStrategyConfig{
 			Signal: syscall.SIGTERM,
 		},
 	}

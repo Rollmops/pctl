@@ -1,25 +1,22 @@
-package stop_strategy
+package app
 
 import (
-	"github.com/Rollmops/pctl/common"
-	"github.com/Rollmops/pctl/config"
 	"github.com/drone/envsubst"
-	gopsutil "github.com/shirou/gopsutil/process"
 	"os"
 	"os/exec"
 	"strconv"
 )
 
 type ScriptStopStrategy struct {
-	config.ScriptStopStrategyConfig
+	ScriptStopStrategyConfig
 }
 
-func (s *ScriptStopStrategy) Stop(c *config.ProcessConfig, p *gopsutil.Process) error {
+func (s *ScriptStopStrategy) Stop(process *Process) error {
 	mapping := map[string]string{
-		"pid":  strconv.Itoa(int(p.Pid)),
-		"name": c.Name,
+		"pid":  strconv.Itoa(int(process.Info.GoPsutilProcess.Pid)),
+		"name": process.Config.Name,
 	}
-	stopScriptPath, err := common.ExpandPath(s.Path)
+	stopScriptPath, err := ExpandPath(s.Path)
 	if err != nil {
 		return err
 	}

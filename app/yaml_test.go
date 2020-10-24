@@ -1,7 +1,7 @@
-package yaml_test
+package app_test
 
 import (
-	"github.com/Rollmops/pctl/config/yaml"
+	"github.com/Rollmops/pctl/app"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path"
@@ -19,7 +19,7 @@ func init() {
 
 func TestLoadConfigOk(t *testing.T) {
 	testConfigPath := path.Join(testDataDir, "pctl.yml")
-	yamlLoader := yaml.NewYamlLoader()
+	yamlLoader := app.NewYamlLoader()
 
 	_config, err := yamlLoader.Load(testConfigPath)
 	assert.NoError(t, err)
@@ -28,7 +28,7 @@ func TestLoadConfigOk(t *testing.T) {
 
 func TestCircleInclude(t *testing.T) {
 	testConfigPath := path.Join(testDataDir, "pctl_circle_include.yml")
-	yamlLoader := yaml.NewYamlLoader()
+	yamlLoader := app.NewYamlLoader()
 
 	_, err := yamlLoader.Load(testConfigPath)
 
@@ -39,7 +39,7 @@ func TestCircleInclude(t *testing.T) {
 
 func TestLoadConfigGlobIncludes(t *testing.T) {
 	testConfigPath := path.Join(testDataDir, "glob_test.yml")
-	yamlLoader := yaml.NewYamlLoader()
+	yamlLoader := app.NewYamlLoader()
 
 	_config, _ := yamlLoader.Load(testConfigPath)
 

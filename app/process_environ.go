@@ -1,8 +1,7 @@
-package process
+package app
 
 import (
 	"encoding/json"
-	"github.com/Rollmops/pctl/config"
 	gopsutil "github.com/shirou/gopsutil/process"
 	"io/ioutil"
 	"path"
@@ -11,7 +10,7 @@ import (
 )
 
 type RunningEnvironInfo struct {
-	Config    config.ProcessConfig
+	Config    ProcessConfig
 	Pid       int32
 	Comment   string
 	Md5Hashes map[string]string

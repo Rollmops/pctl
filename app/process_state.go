@@ -1,12 +1,7 @@
 package app
 
-import (
-	"github.com/Rollmops/pctl/config"
-	"github.com/Rollmops/pctl/process"
-)
-
 type ProcessState struct {
-	Process      *process.Process
+	Process      *Process
 	dependencies []*ProcessState
 	started      bool
 	stopped      bool
@@ -40,24 +35,33 @@ func (c *ProcessState) AddDependency(d *ProcessState) {
 	c.dependencies = append(c.dependencies, d)
 }
 
-func NewFromProcessConfigs(processConfigs *[]*config.ProcessConfig, dependencyGetter func(*config.ProcessConfig) []string) *map[string]*ProcessState {
+func NewProcessStateMap(processes *[]*Process, dependencyGetter func(*Process) []string) *map[string]*ProcessState {
 	processStateMap := make(map[string]*ProcessState)
-	for _, p := range *processConfigs {
-		processStateMap = addToProcessStateMap(p, processStateMap, dependencyGetter)
+	for _, p := range *processes {
+		processStateMap = addToProcessStateMap(p, processes, processStateMap, dependencyGetter)
 	}
 	return &processStateMap
 }
 
-func addToProcessStateMap(c *config.ProcessConfig, processStateMap map[string]*ProcessState, dependencyGetter func(*config.ProcessConfig) []string) map[string]*ProcessState {
-	if processStateMap[c.Name] == nil {
-		processStateMap[c.Name] = &ProcessState{
-			Process: &process.Process{Config: c},
+func addToProcessStateMap(p *Process, processes *[]*Process, processStateMap map[string]*ProcessState, dependencyGetter func(*Process) []string) map[string]*ProcessState {
+	if processStateMap[p.Config.Name] == nil {
+		processStateMap[p.Config.Name] = &ProcessState{
+			Process: p,
 			started: false,
 		}
 	}
-	for _, d := range dependencyGetter(c) {
-		processStateMap = addToProcessStateMap(CurrentContext.Config.FindByName(d), processStateMap, dependencyGetter)
-		processStateMap[c.Name].AddDependency(processStateMap[d])
+	for _, d := range dependencyGetter(p) {
+		processStateMap = addToProcessStateMap(findProcessByName(d, processes), processes, processStateMap, dependencyGetter)
+		processStateMap[p.Config.Name].AddDependency(processStateMap[d])
 	}
 	return processStateMap
+}
+
+func findProcessByName(name string, processes *[]*Process) *Process {
+	for _, p := range *processes {
+		if p.Config.Name == name {
+			return p
+		}
+	}
+	return nil
 }

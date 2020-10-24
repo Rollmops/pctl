@@ -1,4 +1,4 @@
-package config
+package app
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -17,7 +17,9 @@ func TestIsRelevantForFilterStrings(t *testing.T) {
 }
 
 func isRelevantForFilter(t *testing.T, p *ProcessConfig, filterPattern string) bool {
-	isRelevant, err := p.IsRelevantForFilter(filterPattern)
+	filter, err := NewFilter(filterPattern)
+	assert.NoError(t, err)
+	isRelevant, err := filter.IsMatchingProcess(&Process{Config: p})
 	assert.NoError(t, err)
 	return isRelevant
 }

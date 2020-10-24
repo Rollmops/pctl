@@ -1,9 +1,7 @@
-package stop_strategy
+package app
 
 import (
 	"fmt"
-	"github.com/Rollmops/pctl/config"
-	gopsutil "github.com/shirou/gopsutil/process"
 	"syscall"
 )
 
@@ -16,20 +14,20 @@ var _signalNameMapping = map[string]syscall.Signal{
 }
 
 type SignalStopStrategy struct {
-	config.SignalStopStrategyConfig
+	SignalStopStrategyConfig
 }
 
-func (s *SignalStopStrategy) Stop(_ *config.ProcessConfig, p *gopsutil.Process) error {
+func (s *SignalStopStrategy) Stop(p *Process) error {
 	if s.SignalString != "" {
 		signal, prs := _signalNameMapping[s.SignalString]
 		if prs == false {
 			return fmt.Errorf("invalid signal name: '%s'", s.SignalString)
 		}
-		return p.SendSignal(signal)
+		return p.Info.GoPsutilProcess.SendSignal(signal)
 	}
 	signal := s.Signal
 	if signal == 0 {
 		signal = syscall.SIGTERM
 	}
-	return p.SendSignal(signal)
+	return p.Info.GoPsutilProcess.SendSignal(signal)
 }

@@ -1,9 +1,7 @@
-package yaml
+package app
 
 import (
 	"fmt"
-	"github.com/Rollmops/pctl/common"
-	"github.com/Rollmops/pctl/config"
 	"io/ioutil"
 	"path/filepath"
 
@@ -12,20 +10,21 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Loader struct{}
+type YamlLoader struct {
+}
 
 type _rawConfig struct {
 	Includes     []string
-	Processes    []*config.ProcessConfig
-	StopStrategy config.StopStrategyConfig
+	Processes    []*ProcessConfig
+	StopStrategy StopStrategyConfig
 }
 
-func NewYamlLoader() *Loader {
-	return &Loader{}
+func NewYamlLoader() *YamlLoader {
+	return &YamlLoader{}
 }
 
-func (l *Loader) Load(path string) (*config.Config, error) {
-	path, err := common.ExpandPath(path)
+func (l *YamlLoader) Load(path string) (*Config, error) {
+	path, err := ExpandPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +33,7 @@ func (l *Loader) Load(path string) (*config.Config, error) {
 		return nil, err
 	}
 
-	_config := config.Config{
+	_config := Config{
 		Processes: rawConfig.Processes,
 	}
 
@@ -46,7 +45,7 @@ func (l *Loader) Load(path string) (*config.Config, error) {
 	return &_config, err
 }
 
-func loadIncludes(baseConfigPath string, includes []string, config *config.Config) error {
+func loadIncludes(baseConfigPath string, includes []string, config *Config) error {
 	for _, include := range includes {
 		include, _ = filepath.Abs(os.ExpandEnv(include))
 
