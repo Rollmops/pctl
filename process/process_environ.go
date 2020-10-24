@@ -11,9 +11,10 @@ import (
 )
 
 type RunningEnvironInfo struct {
-	Config  config.ProcessConfig
-	Pid     int32
-	Comment string
+	Config    config.ProcessConfig
+	Pid       int32
+	Comment   string
+	Md5Hashes map[string]string
 }
 
 var _pctlInfoMap = make(map[string]*RunningEnvironInfo)

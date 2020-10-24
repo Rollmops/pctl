@@ -66,7 +66,7 @@ func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string) error {
 		if c.IsReadyToStart() {
 			err := c.Start(comment)
 			if err != nil {
-				fmt.Printf(output.FailedColor("Failed to start '%s'\n", c.Process.Config.Name))
+				fmt.Printf(output.FailedColor("Failed to start '%s' (%s)\n", c.Process.Config.Name, err))
 			} else {
 				fmt.Printf(output.OkColor("Started process '%s'\n", c.Process.Config.Name))
 			}

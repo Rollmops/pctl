@@ -58,7 +58,7 @@ func (c *ProcessState) StopAsync(wg *sync.WaitGroup) error {
 	}
 	if runningEnvironInfo == nil {
 		c.stopped = true
-		fmt.Printf(output.OkColor("Process '%s' is already stopped\n", c.Process.Config.Name))
+		fmt.Printf(output.WarningColor("Process '%s' has already stopped\n", c.Process.Config.Name))
 		wg.Done()
 		return nil
 	}
