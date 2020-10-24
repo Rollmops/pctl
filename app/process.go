@@ -48,20 +48,13 @@ func (p *Process) IsRunning() bool {
 }
 
 func (p *Process) Start(comment string) error {
-	name := p.Config.Command[0]
-
-	var args []string
-	if len(p.Config.Command) > 1 {
-		args = p.Config.Command[1:]
-	}
-
 	runningInfoStr, err := _createRunningInfoJson(comment, p)
 	if err != nil {
 		return err
 	}
 	infoEnv := fmt.Sprintf("__PCTL_INFO__=%s", runningInfoStr)
 
-	cmd := exec.Command(name, args...)
+	cmd := exec.Command("setsid", p.Config.Command...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, infoEnv)
 
