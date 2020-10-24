@@ -71,22 +71,14 @@ func (p *Process) Start(comment string) error {
 }
 
 func _createRunningInfoJson(comment string, p *Process) (string, error) {
-	md5hashes := make(map[string]string)
-	for _, arg := range p.Config.Command {
-		fullPath, err := common.GetFullPathFromFile(arg)
-		if err == nil {
-			hash, err := common.HashMd5File(fullPath)
-			if err != nil {
-				return "", err
-			}
-			md5hashes[arg] = hash
-		}
+	md5hashes, err := common.CreateFileHashesFromCommand(p.Config.Command)
+	if err != nil {
+		return "", err
 	}
-
 	runningEnvironInfo := RunningEnvironInfo{
 		Config:    *p.Config,
 		Comment:   comment,
-		Md5Hashes: md5hashes,
+		Md5Hashes: *md5hashes,
 	}
 	infoStr, err := json.Marshal(runningEnvironInfo)
 	if err != nil {

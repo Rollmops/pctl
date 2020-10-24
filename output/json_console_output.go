@@ -43,34 +43,38 @@ type ProcessInfo struct {
 }
 
 type JsonInfoEntry struct {
-	Name                 string       `json:"name"`
-	ConfiguredCommand    []string     `json:"configuredCommand"`
-	RunningCommand       []string     `json:"runningCommand"`
-	IsRunning            bool         `json:"isRunning"`
-	ConfigCommandChanged bool         `json:"configCommandChanged"`
-	Info                 *ProcessInfo `json:"info"`
+	Name              string       `json:"name"`
+	ConfiguredCommand []string     `json:"configuredCommand"`
+	RunningCommand    []string     `json:"runningCommand"`
+	IsRunning         bool         `json:"isRunning"`
+	DirtyCommand      bool         `json:"dirtyCommand"`
+	DirtyCommandArgs  []string     `json:"dirtyCommandArgs"`
+	Dirty             bool         `json:"dirty"`
+	Info              *ProcessInfo `json:"info"`
 }
 
 func (j *JsonConsoleOutput) SetWriter(writer *os.File) {
 	j.writer = writer
 }
 
-func (j *JsonConsoleOutput) Write(infoEntries []*Info) error {
+func (j *JsonConsoleOutput) Write(infos []*Info) error {
 
 	var jsonInfoEntries []*JsonInfoEntry
 
-	for _, infoEntry := range infoEntries {
-		runningInfo, err := getRunningInfo(infoEntry)
+	for _, info := range infos {
+		processInfo, err := getProcessInfo(info)
 		if err != nil {
 			return err
 		}
 		jsonInfoEntry := &JsonInfoEntry{
-			Name:                 infoEntry.Name,
-			ConfiguredCommand:    infoEntry.ConfigCommand,
-			RunningCommand:       infoEntry.RunningCommand,
-			IsRunning:            infoEntry.IsRunning,
-			Info:                 runningInfo,
-			ConfigCommandChanged: infoEntry.ConfigCommandChanged,
+			Name:              info.Name,
+			ConfiguredCommand: info.ConfigCommand,
+			RunningCommand:    info.RunningCommand,
+			IsRunning:         info.IsRunning,
+			Info:              processInfo,
+			DirtyCommand:      info.DirtyCommand,
+			DirtyCommandArgs:  info.DirtyMd5Hashes,
+			Dirty:             info.Dirty,
 		}
 		jsonInfoEntries = append(jsonInfoEntries, jsonInfoEntry)
 	}
@@ -97,7 +101,7 @@ func (j *JsonConsoleOutput) Write(infoEntries []*Info) error {
 	}
 }
 
-func getRunningInfo(info *Info) (*ProcessInfo, error) {
+func getProcessInfo(info *Info) (*ProcessInfo, error) {
 	if info.RunningInfo == nil {
 		return nil, nil
 	}

@@ -97,10 +97,23 @@ func HashMd5File(filePath string) (string, error) {
 	}
 
 	hashInBytes := hash.Sum(nil)[:16]
-
 	returnMD5String = hex.EncodeToString(hashInBytes)
-
 	return returnMD5String, nil
+}
+
+func CreateFileHashesFromCommand(command []string) (*map[string]string, error) {
+	md5hashes := make(map[string]string)
+	for _, arg := range command {
+		fullPath, err := GetFullPathFromFile(arg)
+		if err == nil {
+			hash, err := HashMd5File(fullPath)
+			if err != nil {
+				return nil, err
+			}
+			md5hashes[arg] = hash
+		}
+	}
+	return &md5hashes, nil
 }
 
 func GetFullPathFromFile(path string) (string, error) {
