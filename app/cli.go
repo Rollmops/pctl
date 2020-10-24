@@ -17,6 +17,27 @@ func CreateCliApp() (*cli.App, error) {
 		Usage:    "IsRelevantForFilter output based on given label values. Format: <label>=<value>",
 	}
 
+	runningFlag := &cli.BoolFlag{
+		Name:    "running",
+		Aliases: []string{"r"},
+		Value:   false,
+		Usage:   "Filter only running processes (same as '--filter state.running==true')",
+	}
+
+	stoppedFlag := &cli.BoolFlag{
+		Name:    "stopped",
+		Aliases: []string{"s"},
+		Value:   false,
+		Usage:   "Filter only stopped processes (same as '--filter state.stopped==true')",
+	}
+
+	dirtyFlag := &cli.BoolFlag{
+		Name:    "dirty",
+		Aliases: []string{"d"},
+		Value:   false,
+		Usage:   "Filter only dirty processes (same as '--filter state.dirty==true')",
+	}
+
 	return &cli.App{
 		Before: func(c *cli.Context) error {
 			logLevelString := c.String("loglevel")
@@ -65,9 +86,13 @@ func CreateCliApp() (*cli.App, error) {
 						Usage: "add comment",
 					},
 					filtersFlag,
+					runningFlag,
+					stoppedFlag,
+					dirtyFlag,
 				},
 				Action: func(c *cli.Context) error {
 					filters := c.StringSlice("filter")
+					filters = addShortcutFilters(c, filters)
 					if c.NArg() == 0 && len(filters) == 0 {
 						return fmt.Errorf("missing process names or filters")
 					}
@@ -86,9 +111,13 @@ func CreateCliApp() (*cli.App, error) {
 						EnvVars: []string{"PCTL_STOP_NO_WAIT"},
 					},
 					filtersFlag,
+					runningFlag,
+					stoppedFlag,
+					dirtyFlag,
 				},
 				Action: func(c *cli.Context) error {
 					filters := c.StringSlice("filter")
+					filters = addShortcutFilters(c, filters)
 					if c.NArg() == 0 && len(filters) == 0 {
 						return fmt.Errorf("missing process names or filters")
 					}
@@ -114,9 +143,13 @@ func CreateCliApp() (*cli.App, error) {
 						}(),
 					},
 					filtersFlag,
+					runningFlag,
+					stoppedFlag,
+					dirtyFlag,
 				},
 				Action: func(c *cli.Context) error {
 					filters := c.StringSlice("filter")
+					filters = addShortcutFilters(c, filters)
 					format := c.String("format")
 					if format == "" {
 						format = "default"
@@ -126,4 +159,17 @@ func CreateCliApp() (*cli.App, error) {
 			},
 		},
 	}, nil
+}
+
+func addShortcutFilters(c *cli.Context, filters []string) []string {
+	if c.Bool("running") {
+		filters = append(filters, "state.running==true")
+	}
+	if c.Bool("stopped") {
+		filters = append(filters, "state.stopped==true")
+	}
+	if c.Bool("dirty") {
+		filters = append(filters, "state.dirty==true")
+	}
+	return filters
 }
