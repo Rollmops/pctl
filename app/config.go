@@ -24,10 +24,21 @@ type ProcessConfig struct {
 	Metadata         map[string]string `yaml:"metadata"`
 	ReadinessProbe   string            `yaml:"readinessProbe"`
 	StartupProbe     string            `yaml:"startupProbe"`
+	Env              map[string]string `yaml:"env"`
 }
 
 type Config struct {
 	ProcessConfigs []*ProcessConfig
+}
+
+func (c *Config) ExpandVars() {
+	for _, pConfig := range c.ProcessConfigs {
+		var command []string
+		for _, arg := range pConfig.Command {
+			command = append(command, ExpandPath(arg))
+		}
+		pConfig.Command = command
+	}
 }
 
 var SuffixConfigLoaderMap = make(map[string]Loader)

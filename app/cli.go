@@ -148,7 +148,7 @@ func CreateCliApp() (*cli.App, error) {
 			{
 				Name:      "start",
 				Usage:     "start process(es)",
-				ArgsUsage: "a list of process names",
+				ArgsUsage: UsageNameSpecifiers,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "comment",
@@ -169,9 +169,32 @@ func CreateCliApp() (*cli.App, error) {
 				},
 			},
 			{
+				Name:      "restart",
+				Usage:     "restart process(es)",
+				ArgsUsage: UsageNameSpecifiers,
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "comment",
+						Usage: "add comment",
+					},
+					filtersFlag,
+					runningFlag,
+					stoppedFlag,
+					dirtyFlag,
+				},
+				Action: func(c *cli.Context) error {
+					filters := c.StringSlice("filter")
+					filters = addShortcutFilters(c, filters)
+					if c.NArg() == 0 && len(filters) == 0 {
+						return fmt.Errorf("missing process names or filters")
+					}
+					return RestartCommand(c.Args().Slice(), filters, c.String("comment"))
+				},
+			},
+			{
 				Name:      "stop",
 				Usage:     "stop process(es)",
-				ArgsUsage: "a list of process names",
+				ArgsUsage: UsageNameSpecifiers,
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
 						Name:    "nowait",

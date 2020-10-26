@@ -69,9 +69,20 @@ func (p *Process) Start(comment string) error {
 	}
 	infoEnv := fmt.Sprintf("__PCTL_INFO__=%s", runningInfoStr)
 
-	cmd := exec.Command("setsid", p.Config.Command...)
+	name := p.Config.Command[0]
+
+	var args []string
+	if len(p.Config.Command) > 1 {
+		args = p.Config.Command[1:]
+	}
+
+	cmd := exec.Command(name, args...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, infoEnv)
+
+	for key, value := range p.Config.Env {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
+	}
 
 	err = cmd.Start()
 	if err != nil {

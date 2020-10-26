@@ -52,6 +52,7 @@ func (c *Context) LoadConfig() error {
 		return err
 	}
 	c.Config.FillDependsOnInverse()
+	c.Config.ExpandVars()
 	logrus.Debugf("Loaded %d process configuration(s)", len(c.Config.ProcessConfigs))
 	return ValidateAcyclicDependencies()
 }

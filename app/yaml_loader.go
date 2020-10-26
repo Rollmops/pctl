@@ -24,10 +24,7 @@ func NewYamlLoader() *YamlLoader {
 }
 
 func (l *YamlLoader) Load(path string) (*Config, error) {
-	path, err := ExpandPath(path)
-	if err != nil {
-		return nil, err
-	}
+	path = ExpandPath(path)
 	rawConfig, err := loadYamlFromPath(path)
 	if err != nil {
 		return nil, err

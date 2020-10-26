@@ -45,15 +45,12 @@ func CompareStringSlices(slice1 []string, slice2 []string) bool {
 	return true
 }
 
-func ExpandPath(path string) (string, error) {
-	path = strings.Replace(path, "~", os.Getenv("HOME"), 1)
-	path, err := filepath.Abs(os.ExpandEnv(path))
-	if err != nil {
-		return "", err
+func ExpandPath(path string) string {
+	if strings.HasPrefix(path, "~") {
+		path = strings.Replace(path, "~", os.Getenv("HOME"), 1)
 	}
-
-	return path, nil
-
+	path = os.ExpandEnv(path)
+	return path
 }
 
 func ByteCountIEC(b uint64) string {

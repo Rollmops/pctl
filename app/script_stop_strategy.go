@@ -23,10 +23,7 @@ func (s *ScriptStopStrategy) Stop(process *Process) error {
 		"pid":  strconv.Itoa(int(process.Info.GoPsutilProcess.Pid)),
 		"name": process.Config.Name,
 	}
-	stopScriptPath, err := ExpandPath(s.Path)
-	if err != nil {
-		return err
-	}
+	stopScriptPath := ExpandPath(s.Path)
 
 	var substArgs []string
 	for _, arg := range s.Args {
