@@ -9,7 +9,7 @@ import (
 func FindAgentProcess() (*gopsutil.Process, error) {
 	pid, err := pidfile.Read()
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 	p, _ := gopsutil.NewProcess(int32(pid))
 	isRunning, _ := p.IsRunning()
