@@ -78,6 +78,10 @@ func (p *Process) Start(comment string) error {
 		return err
 	}
 
+	err = CurrentContext.Cache.Refresh()
+	if err != nil {
+		return err
+	}
 	err = p.SyncRunningInfo()
 	if err != nil {
 		return err
@@ -120,11 +124,7 @@ func (p *Process) Stop() error {
 func (p *Process) WaitForStop(timeout time.Duration, intervalDuration time.Duration) error {
 	attempts := timeout / intervalDuration
 	err := WaitUntilTrue(func() (bool, error) {
-		runningInfo, err := p.findMatchRunningEnvironInfo()
-		if err != nil {
-			return false, err
-		}
-		return runningInfo == nil, nil
+		return p.IsRunning(), nil
 	}, intervalDuration, uint(attempts))
 	if err != nil {
 		return err
@@ -137,30 +137,8 @@ func (p *Process) Kill() error {
 }
 
 func (p *Process) SyncRunningInfo() error {
-	runningInfo, err := p.findMatchRunningEnvironInfo()
-	if err != nil {
-		return err
-	}
+	runningInfo := CurrentContext.Cache.FindRunningInfoByGroupAndName(p.Config.Group, p.Config.Name)
 	return p.setRunningInfo(runningInfo)
-}
-
-func (p *Process) findMatchRunningEnvironInfo() (*RunningEnvironInfo, error) {
-	processIds, err := gopsutil.Pids()
-	if err != nil {
-		return nil, err
-	}
-	for _, pid := range processIds {
-		runningInfo, err := traverseToTopParentWithRunningInfo(pid)
-		if err != nil {
-			return nil, err
-		}
-		if runningInfo != nil {
-			if runningInfo.Config.Group == p.Config.Group && runningInfo.Config.Name == p.Config.Name {
-				return runningInfo, nil
-			}
-		}
-	}
-	return nil, nil
 }
 
 func (p *Process) setRunningInfo(runningInfo *RunningEnvironInfo) error {
@@ -205,7 +183,7 @@ func collectDirtyHashes(command *[]string, runningInfo *RunningEnvironInfo) (*[]
 	return &returnDirtyHashes, nil
 }
 
-func traverseToTopParentWithRunningInfo(pid int32) (*RunningEnvironInfo, error) {
+func FindProcessRunningInfo(pid int32) (*RunningEnvironInfo, error) {
 	runningInfo, err := findRunningEnvironInfoFromPid(pid)
 	if err != nil {
 		return nil, err
@@ -222,7 +200,7 @@ func traverseToTopParentWithRunningInfo(pid int32) (*RunningEnvironInfo, error) 
 	if err != nil {
 		return nil, err
 	}
-	runningInfoFromParent, err := traverseToTopParentWithRunningInfo(ppid)
+	runningInfoFromParent, err := FindProcessRunningInfo(ppid)
 	if runningInfoFromParent != nil {
 		return runningInfoFromParent, nil
 	}
@@ -232,7 +210,7 @@ func traverseToTopParentWithRunningInfo(pid int32) (*RunningEnvironInfo, error) 
 func findRunningEnvironInfoFromPid(pid int32) (*RunningEnvironInfo, error) {
 	envString := getProcessEnvironVariable(pid, "__PCTL_INFO__")
 	if envString != "" {
-		envJson := strings.Join(strings.Split(envString, "=")[1:], "")
+		envJson := strings.SplitN(envString, "=", 2)[1]
 		var runningInfo RunningEnvironInfo
 		err := json.Unmarshal([]byte(envJson), &runningInfo)
 		if err != nil {

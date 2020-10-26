@@ -237,7 +237,9 @@ func CreateCliApp() (*cli.App, error) {
 					if format == "" {
 						format = "default"
 					}
-					columns := strings.Split(c.String("columns"), ",")
+					columnsString := c.String("columns")
+					columnsString = strings.ReplaceAll(columnsString, "+", "group,name,pid,status")
+					columns := strings.Split(columnsString, ",")
 					return InfoCommand(c.Args().Slice(), format, filters, columns)
 				},
 			},

@@ -10,6 +10,7 @@ type Context struct {
 	Config       *Config
 	OutputWriter *os.File
 	Processes    ProcessList
+	Cache        Cache
 }
 
 var CurrentContext *Context
@@ -36,7 +37,7 @@ func (c *Context) Initialize() error {
 		return err
 	}
 	c.RefreshProcessesFromConfig()
-	return nil
+	return c.Cache.Refresh()
 }
 
 func (c *Context) LoadConfig() error {
