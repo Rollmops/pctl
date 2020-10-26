@@ -2,12 +2,10 @@ package app
 
 import (
 	"fmt"
-	"github.com/minio/minio/pkg/wildcard"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"os"
 	"path"
 	"strings"
-	"syscall"
 )
 
 const _configFileName string = "pctl.yml"
@@ -16,35 +14,16 @@ type Loader interface {
 	Load(path string) (*Config, error)
 }
 
-type StopStrategyConfig struct {
-	Script       *ScriptStopStrategyConfig
-	Signal       *SignalStopStrategyConfig
-	MaxWaitTime  string
-	IntervalTime string
-}
-
-type SignalStopStrategyConfig struct {
-	Signal       syscall.Signal
-	SignalString string
-}
-
-type ScriptStopStrategyConfig struct {
-	Path          string
-	Args          []string
-	ForwardStdout bool `yaml:"forwardStdout"`
-	ForwardStderr bool `yaml:"forwardStderr"`
-}
-
 type ProcessConfig struct {
-	Name                    string
-	Command                 []string            `yaml:"cmd"`
-	PidRetrieveStrategyName string              `yaml:"pidStrategy"`
-	StopStrategy            *StopStrategyConfig `yaml:"stop"`
-	DependsOn               []string            `yaml:"dependsOn"`
-	DependsOnInverse        []string
-	Metadata                map[string]string `yaml:"metadata"`
-	ReadinessProbe          string            `yaml:"readinessProbe"`
-	StartupProbe            string            `yaml:"startupProbe"`
+	Name             string
+	Group            string
+	Command          []string            `yaml:"cmd"`
+	StopStrategy     *StopStrategyConfig `yaml:"stop"`
+	DependsOn        []string            `yaml:"dependsOn"`
+	DependsOnInverse []string
+	Metadata         map[string]string `yaml:"metadata"`
+	ReadinessProbe   string            `yaml:"readinessProbe"`
+	StartupProbe     string            `yaml:"startupProbe"`
 }
 
 type Config struct {
@@ -53,8 +32,12 @@ type Config struct {
 
 var SuffixConfigLoaderMap = make(map[string]Loader)
 
+func (c *ProcessConfig) String() string {
+	return fmt.Sprintf("ProcessConfig(group: %s, name: %s)", c.Group, c.Name)
+}
+
 func (c *Config) FindByName(name string) *ProcessConfig {
-	log.Tracef("Getting process config for name '%s'", name)
+	logrus.Tracef("Getting process config for name '%s'", name)
 	for _, p := range c.ProcessConfigs {
 		if p.Name == name {
 			return p
@@ -63,22 +46,20 @@ func (c *Config) FindByName(name string) *ProcessConfig {
 	return nil
 }
 
-func (c *Config) CollectSyncedProcessesByNameSpecifiers(nameSpecifiers []string, filters []string, allIfNoSpecifiers bool) ([]*Process, error) {
-	log.Tracef("Collecting processes for name specifiers: %v", nameSpecifiers)
-	var returnProcesses []*Process
+func (c *Config) CollectProcessesByNameSpecifiers(nameSpecifiers []string, filters []string, allIfNoSpecifiers bool) (ProcessList, error) {
+	logrus.Tracef("Collecting processes for name specifiers: %v", nameSpecifiers)
+	var returnProcesses ProcessList
 	if len(nameSpecifiers) == 0 && allIfNoSpecifiers {
-		for _, pConfig := range c.ProcessConfigs {
-			p, err := CurrentContext.GetProcessByName(pConfig.Name)
-			if err != nil {
-				return nil, err
-			}
-			returnProcesses = append(returnProcesses, p)
-		}
+		returnProcesses = CurrentContext.Processes
 	}
-	for _, nameSpecifier := range nameSpecifiers {
+	for _, specifier := range nameSpecifiers {
+		groupNameSpecifier, err := NewGroupNameSpecifier(specifier)
+		if err != nil {
+			return nil, err
+		}
 		for _, processConfig := range c.ProcessConfigs {
-			if wildcard.Match(nameSpecifier, processConfig.Name) && !_isInProcessList(processConfig.Name, returnProcesses) {
-				p, err := CurrentContext.GetProcessByName(processConfig.Name)
+			if groupNameSpecifier.IsMatchingGroupAndName(processConfig.Group, processConfig.Name) && !_isInProcessList(processConfig.Name, returnProcesses) {
+				p, err := CurrentContext.GetProcessByConfig(processConfig)
 				if err != nil {
 					return nil, err
 				}
@@ -86,13 +67,13 @@ func (c *Config) CollectSyncedProcessesByNameSpecifiers(nameSpecifiers []string,
 			}
 		}
 	}
-	log.Tracef("Found %d process configs for name specifiers: %v", len(returnProcesses), nameSpecifiers)
+	logrus.Tracef("Found %d process configs for name specifiers: %v", len(returnProcesses), nameSpecifiers)
 	return getFilteredProcesses(returnProcesses, filters)
 }
 
-func getFilteredProcesses(processes []*Process, filterPatterns []string) ([]*Process, error) {
+func getFilteredProcesses(processes ProcessList, filterPatterns []string) ([]*Process, error) {
 	if len(filterPatterns) > 0 {
-		var filteredProcesses []*Process
+		var filteredProcesses ProcessList
 		for _, filterPattern := range filterPatterns {
 			filter, err := NewFilter(filterPattern)
 			if err != nil {
@@ -124,7 +105,7 @@ func (c *Config) FillDependsOnInverse() {
 	}
 }
 
-func _isInProcessList(name string, processes []*Process) bool {
+func _isInProcessList(name string, processes ProcessList) bool {
 	for _, p := range processes {
 		if name == p.Config.Name {
 			return true

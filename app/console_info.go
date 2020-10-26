@@ -6,9 +6,6 @@ import (
 	"github.com/jedib0t/go-pretty/text"
 	"io"
 	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func init() {
@@ -40,84 +37,46 @@ func (o *DefaultConsoleOutput) SetWriter(writer *os.File) {
 	o.Writer = writer
 }
 
-func (o *DefaultConsoleOutput) Write(processes []*Process) error {
+func (o *DefaultConsoleOutput) Write(processes ProcessList, columnIds []string) error {
 	tw := table.NewWriter()
-	// append a header row
-	tw.AppendHeader(table.Row{"Name", "Status", "Pid", "Uptime", "Rss", "Vms", "Command"})
-
-	// append some data rows
-	runningCount := 0
-	var rssSum uint64
-	nowTime := time.Now()
-	for _, p := range processes {
-		pid := ""
-		rss := ""
-		vms := ""
-		uptime := ""
-		runningCommand := ""
-		if p.IsRunning() {
-			runningCount++
-			uptime = _getUptime(p, nowTime)
-			pid = strconv.Itoa(int(p.Info.GoPsutilProcess.Pid))
-			memoryInfo, err := p.Info.GoPsutilProcess.MemoryInfo()
-			if err != nil {
-				rss = "error"
-				vms = "error"
-			} else {
-				rssSum += memoryInfo.RSS
-				rss = ByteCountIEC(memoryInfo.RSS)
-				vms = ByteCountIEC(memoryInfo.VMS)
-			}
-			runningCommand = strings.Join(p.Info.RunningCommand, " ")
-		}
-
-		tw.AppendRow(table.Row{
-			p.Config.Name,
-			_getStatusString(p),
-			pid,
-			uptime,
-			rss,
-			vms,
-			runningCommand,
-		})
-	}
-	tw.AppendFooter(table.Row{
-		"",
-		fmt.Sprintf("Running: %d/%d", runningCount, len(processes)),
-		"",
-		"",
-		fmt.Sprintf("Σ %s", ByteCountIEC(rssSum)),
-	})
-	tw.SetAutoIndex(true)
 	tw.SetStyle(o.Style)
 	tw.Style().Format.Header = text.FormatTitle
 	tw.Style().Format.Footer = text.FormatTitle
 	tw.Style().Options.SeparateColumns = false
+	tw.SetAutoIndex(true)
 
+	var header table.Row
+	var footer table.Row
+	for _, columnId := range columnIds {
+		property := PropertyMap[columnId]
+		if property != nil {
+			header = append(header, property.Name())
+			footerValue, err := property.FormattedSumValue(processes)
+			if err != nil {
+				return err
+			}
+			footer = append(footer, footerValue)
+		} else {
+			return fmt.Errorf("column '%s' not available", columnId)
+		}
+	}
+	tw.AppendHeader(header)
+	tw.AppendFooter(footer)
+
+	for _, process := range processes {
+		var row table.Row
+		for _, columnId := range columnIds {
+			property := PropertyMap[columnId]
+			if property != nil {
+				value, err := property.Value(process, true)
+				if err != nil {
+					return err
+				}
+				row = append(row, value)
+			}
+		}
+		tw.AppendRow(row)
+	}
 	_, err := o.Writer.Write([]byte(tw.Render() + "\n"))
 	return err
-}
-
-func _getUptime(p *Process, nowTime time.Time) string {
-	var uptime string
-	createTime, err := p.Info.GoPsutilProcess.CreateTime()
-	if err != nil {
-		uptime = "error"
-	}
-	uptimeInt := nowTime.Sub(time.Unix(createTime/1000, 0))
-	uptime, err = DurationToString(uptimeInt)
-	if err != nil {
-		uptime = "error"
-	}
-	return uptime
-}
-
-func _getStatusString(p *Process) string {
-	var statusString string
-	if p.IsRunning() {
-		statusString = OkColor("Running")
-	} else {
-		statusString = FailedColor("Stopped")
-	}
-	return statusString
 }

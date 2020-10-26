@@ -5,6 +5,11 @@ import (
 	"syscall"
 )
 
+type SignalStopStrategyConfig struct {
+	Signal       syscall.Signal
+	SignalString string
+}
+
 var _signalNameMapping = map[string]syscall.Signal{
 	"SIGTERM": syscall.SIGTERM,
 	"SIGKILL": syscall.SIGKILL,

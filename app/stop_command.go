@@ -3,20 +3,24 @@ package app
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"strings"
 	"sync"
 	"time"
 )
 
-//TODO implement noWait
 func StopCommand(names []string, filters []string, noWait bool) error {
-	processes, err := CurrentContext.Config.CollectSyncedProcessesByNameSpecifiers(names, filters, len(filters) > 0)
+	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, len(filters) > 0)
 	if err != nil {
 		return err
 	}
 	if len(processes) == 0 {
-		return fmt.Errorf("no matching process Config for name specifiers: %s", strings.Join(names, ", "))
+		return fmt.Errorf(MsgNoMatchingProcess)
 	}
+
+	err = CurrentContext.Processes.SyncRunningInfo()
+	if err != nil {
+		return err
+	}
+
 	processStateMap, err := NewProcessStateMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOnInverse
@@ -45,9 +49,11 @@ func (c *ProcessState) Stop(noWait bool) error {
 	if !noWait {
 		err = c.Process.WaitForStop(5*time.Second, 100*time.Millisecond)
 		if err != nil {
+			// TODO kill if configured
 			return err
 		}
 	}
+
 	log.Debugf("Stopped process '%s'", c.Process.Config.Name)
 	c.stopped = true
 	return nil

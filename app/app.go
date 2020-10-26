@@ -7,9 +7,9 @@ import (
 )
 
 type Context struct {
-	Config           *Config
-	OutputWriter     *os.File
-	RunningProcesses []*Process
+	Config       *Config
+	OutputWriter *os.File
+	Processes    ProcessList
 }
 
 var CurrentContext *Context
@@ -21,18 +21,46 @@ func init() {
 	SuffixConfigLoaderMap["yml"] = yamlLoader
 }
 
-func (c *Context) GetProcessByName(name string) (*Process, error) {
-	for _, p := range c.RunningProcesses {
-		if p.Config.Name == name {
+func (c *Context) GetProcessByConfig(processConfig *ProcessConfig) (*Process, error) {
+	for _, p := range c.Processes {
+		if p.Config.Name == processConfig.Name && p.Config.Group == processConfig.Group {
 			return p, nil
 		}
 	}
-	config := c.Config.FindByName(name)
-	if config == nil {
-		return nil, fmt.Errorf("unable to find config '%s'", name)
+	return nil, fmt.Errorf("unable to find process for config '%v'", processConfig)
+}
+
+func (c *Context) Initialize() error {
+	err := c.LoadConfig()
+	if err != nil {
+		return err
 	}
-	p := &Process{Config: config}
-	return p, nil
+	c.RefreshProcessesFromConfig()
+	return nil
+}
+
+func (c *Context) LoadConfig() error {
+	configPath, err := GetConfigPath()
+	if err != nil {
+		return err
+	}
+	logrus.Debugf("Using Config path: %s", configPath)
+	configLoader := GetLoaderFromPath(configPath)
+	c.Config, err = configLoader.Load(configPath)
+	if err != nil {
+		return err
+	}
+	c.Config.FillDependsOnInverse()
+	logrus.Debugf("Loaded %d process configuration(s)", len(c.Config.ProcessConfigs))
+	return ValidateAcyclicDependencies()
+}
+
+func (c *Context) RefreshProcessesFromConfig() {
+	c.Processes = make(ProcessList, 0)
+	for _, processConfig := range c.Config.ProcessConfigs {
+		process := &Process{Config: processConfig}
+		c.Processes = append(c.Processes, process)
+	}
 }
 
 func Run(args []string) error {
@@ -40,27 +68,10 @@ func Run(args []string) error {
 	if err != nil {
 		return err
 	}
-
-	configPath, err := GetConfigPath()
-	if err != nil {
-		return err
-	}
-	logrus.Debugf("Using Config path: %s", configPath)
-	configLoader := GetLoaderFromPath(configPath)
-	CurrentContext.Config, err = configLoader.Load(configPath)
-	if err != nil {
-		return err
-	}
-	CurrentContext.Config.FillDependsOnInverse()
-	logrus.Debugf("Loaded %d process configuration(s)", len(CurrentContext.Config.ProcessConfigs))
-	err = ValidateAcyclicDependencies()
+	err = CurrentContext.Initialize()
 	if err != nil {
 		return err
 	}
 
-	err = CurrentContext.SyncRunningProcesses()
-	if err != nil {
-		return err
-	}
 	return pctlApp.Run(args)
 }

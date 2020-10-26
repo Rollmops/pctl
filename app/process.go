@@ -4,13 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	gopsutil "github.com/shirou/gopsutil/process"
 )
+
+type ProcessList []*Process
 
 type Info struct {
 	Comment         string
@@ -21,10 +27,27 @@ type Info struct {
 	Dirty           bool
 }
 
+type RunningEnvironInfo struct {
+	Config    ProcessConfig
+	Pid       int32
+	Comment   string
+	Md5Hashes map[string]string
+}
+
 type Process struct {
 	Config *ProcessConfig
 	Info   *Info
 	Pid    int32
+}
+
+func (l *ProcessList) SyncRunningInfo() error {
+	for _, p := range *l {
+		err := p.SyncRunningInfo()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *Process) IsRunning() bool {
@@ -40,7 +63,7 @@ func (p *Process) IsRunning() bool {
 }
 
 func (p *Process) Start(comment string) error {
-	runningInfoStr, err := _createRunningInfoJson(comment, p)
+	runningInfoStr, err := createRunningInfoJson(comment, p)
 	if err != nil {
 		return err
 	}
@@ -54,13 +77,12 @@ func (p *Process) Start(comment string) error {
 	if err != nil {
 		return err
 	}
-	p.Pid = int32(cmd.Process.Pid)
 
-	started, err := StartupProbes[p.Config.StartupProbe].Probe(p)
+	err = p.SyncRunningInfo()
 	if err != nil {
 		return err
 	}
-	if !started {
+	if !p.IsRunning() {
 		return fmt.Errorf("startup probe failed")
 	}
 
@@ -86,23 +108,6 @@ func (p *Process) WaitForReady() error {
 	return nil
 }
 
-func _createRunningInfoJson(comment string, p *Process) (string, error) {
-	md5hashes, err := CreateFileHashesFromCommand(p.Config.Command)
-	if err != nil {
-		return "", err
-	}
-	runningEnvironInfo := RunningEnvironInfo{
-		Config:    *p.Config,
-		Comment:   comment,
-		Md5Hashes: *md5hashes,
-	}
-	infoStr, err := json.Marshal(runningEnvironInfo)
-	if err != nil {
-		return "", err
-	}
-	return string(infoStr), nil
-}
-
 func (p *Process) Stop() error {
 	stopStrategy := NewStopStrategyFromConfig(p.Config.StopStrategy)
 	err := stopStrategy.Stop(p)
@@ -112,14 +117,17 @@ func (p *Process) Stop() error {
 	return nil
 }
 
-func (p *Process) WaitForStop(maxWaitTime time.Duration, intervalDuration time.Duration) error {
-	attempts := maxWaitTime / intervalDuration
+func (p *Process) WaitForStop(timeout time.Duration, intervalDuration time.Duration) error {
+	attempts := timeout / intervalDuration
 	err := WaitUntilTrue(func() (bool, error) {
-		return !p.IsRunning(), nil
+		runningInfo, err := p.findMatchRunningEnvironInfo()
+		if err != nil {
+			return false, err
+		}
+		return runningInfo == nil, nil
 	}, intervalDuration, uint(attempts))
 	if err != nil {
-		pid := p.Info.GoPsutilProcess.Pid
-		return fmt.Errorf("unable to stop process '%s' on PID %d", p.Config.Name, pid)
+		return err
 	}
 	return nil
 }
@@ -128,7 +136,34 @@ func (p *Process) Kill() error {
 	return p.Info.GoPsutilProcess.SendSignal(syscall.SIGKILL)
 }
 
-func (p *Process) SetRunningInfo(runningInfo *RunningEnvironInfo) error {
+func (p *Process) SyncRunningInfo() error {
+	runningInfo, err := p.findMatchRunningEnvironInfo()
+	if err != nil {
+		return err
+	}
+	return p.setRunningInfo(runningInfo)
+}
+
+func (p *Process) findMatchRunningEnvironInfo() (*RunningEnvironInfo, error) {
+	processIds, err := gopsutil.Pids()
+	if err != nil {
+		return nil, err
+	}
+	for _, pid := range processIds {
+		runningInfo, err := traverseToTopParentWithRunningInfo(pid)
+		if err != nil {
+			return nil, err
+		}
+		if runningInfo != nil {
+			if runningInfo.Config.Group == p.Config.Group && runningInfo.Config.Name == p.Config.Name {
+				return runningInfo, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (p *Process) setRunningInfo(runningInfo *RunningEnvironInfo) error {
 	logrus.Tracef("Syncing process info for '%s'", p.Config.Name)
 	if runningInfo != nil {
 		dirtyHashes, err := collectDirtyHashes(&p.Config.Command, runningInfo)
@@ -148,6 +183,7 @@ func (p *Process) SetRunningInfo(runningInfo *RunningEnvironInfo) error {
 			Dirty:           dirtyCommand || len(*dirtyHashes) > 0,
 			GoPsutilProcess: gopsutilProcess,
 		}
+		p.Pid = runningInfo.Pid
 	}
 	return nil
 }
@@ -167,4 +203,77 @@ func collectDirtyHashes(command *[]string, runningInfo *RunningEnvironInfo) (*[]
 		}
 	}
 	return &returnDirtyHashes, nil
+}
+
+func traverseToTopParentWithRunningInfo(pid int32) (*RunningEnvironInfo, error) {
+	runningInfo, err := findRunningEnvironInfoFromPid(pid)
+	if err != nil {
+		return nil, err
+	}
+	if runningInfo == nil {
+		return nil, nil
+	}
+
+	proc, err := gopsutil.NewProcess(pid)
+	if err != nil {
+		return nil, err
+	}
+	ppid, err := proc.Ppid()
+	if err != nil {
+		return nil, err
+	}
+	runningInfoFromParent, err := traverseToTopParentWithRunningInfo(ppid)
+	if runningInfoFromParent != nil {
+		return runningInfoFromParent, nil
+	}
+	return runningInfo, nil
+}
+
+func findRunningEnvironInfoFromPid(pid int32) (*RunningEnvironInfo, error) {
+	envString := getProcessEnvironVariable(pid, "__PCTL_INFO__")
+	if envString != "" {
+		envJson := strings.Join(strings.Split(envString, "=")[1:], "")
+		var runningInfo RunningEnvironInfo
+		err := json.Unmarshal([]byte(envJson), &runningInfo)
+		if err != nil {
+			return nil, err
+		}
+		runningInfo.Pid = pid
+		return &runningInfo, nil
+	}
+	return nil, nil
+}
+
+func getProcessEnvironVariable(pid int32, name string) string {
+	envFilePath := path.Join("/", "proc", strconv.Itoa(int(pid)), "environ")
+	envContent, err := ioutil.ReadFile(envFilePath)
+	if err == nil {
+		envContentString := string(envContent)
+		if strings.Contains(envContentString, name) {
+			envStrings := strings.Split(string(envContent), "\000")
+			for _, envString := range envStrings {
+				if strings.HasPrefix(envString, name) {
+					return envString
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func createRunningInfoJson(comment string, p *Process) (string, error) {
+	md5hashes, err := CreateFileHashesFromCommand(p.Config.Command)
+	if err != nil {
+		return "", err
+	}
+	runningEnvironInfo := RunningEnvironInfo{
+		Config:    *p.Config,
+		Comment:   comment,
+		Md5Hashes: *md5hashes,
+	}
+	infoStr, err := json.Marshal(runningEnvironInfo)
+	if err != nil {
+		return "", err
+	}
+	return string(infoStr), nil
 }

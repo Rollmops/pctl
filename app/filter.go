@@ -3,15 +3,13 @@ package app
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
-func defaultCompare(value1 string, value2 string, caseInsensitive bool) bool {
-	if caseInsensitive {
-		return strings.ToLower(value1) == strings.ToLower(value2)
-	}
-	return value1 == value2
+var filterPatternRegex *regexp.Regexp
+
+func init() {
+	filterPatternRegex = regexp.MustCompile(`([.a-zA-Z0-9_-]+)([!=<>]+)([.a-zA-Z0-9_-]+)`)
 }
 
 type Filter struct {
@@ -32,61 +30,46 @@ func NewFilter(pattern string) (*Filter, error) {
 	}, nil
 }
 
-var filterPatternRegex *regexp.Regexp
-
-func init() {
-	filterPatternRegex = regexp.MustCompile(`([.a-zA-Z0-9_-]+)([!=<>]+)([.a-zA-Z0-9_-]+)`)
-}
-
 func (f *Filter) IsMatchingProcess(process *Process) (bool, error) {
 
 	fieldValue := ""
-	caseInsensitive := false
 
+	var comparator PropertyComparator
 	if strings.HasPrefix(f.field, "metadata.") {
 		fieldValue = process.Config.Metadata[strings.Split(f.field, ".")[1]]
-	} else if strings.HasPrefix(f.field, "state.") {
-		caseInsensitive = true
-		filterField := strings.Split(f.field, ".")[1]
-		switch filterField {
-		case "pid":
-			if process.Info != nil {
-				fieldValue = strconv.Itoa(int(process.Info.GoPsutilProcess.Pid))
-			} else {
-				fieldValue = "-1"
-			}
-		case "running":
-			fieldValue = strconv.FormatBool(process.IsRunning())
-		case "stopped":
-			fieldValue = strconv.FormatBool(!process.IsRunning())
-		case "dirty":
-			if process.Info != nil {
-				fieldValue = strconv.FormatBool(process.Info.Dirty)
-			} else {
-				fieldValue = "false"
-			}
-		case "dirtyConfig":
-			if process.Info != nil {
-				fieldValue = strconv.FormatBool(process.Info.DirtyCommand)
-			} else {
-				fieldValue = "false"
-			}
-		case "dirtyMd5":
-			if process.Info != nil {
-				fieldValue = strconv.FormatBool(len(process.Info.DirtyMd5Hashes) > 0)
-			} else {
-				fieldValue = "false"
-			}
+		comparator = &StringPropertyComparator{}
+	} else if f.field == "group" {
+		fieldValue = process.Config.Group
+		comparator = &StringPropertyComparator{}
+	} else if strings.HasPrefix(f.field, "state.") || strings.HasPrefix(f.field, "property.") {
+		propertyId := strings.Split(f.field, ".")[1]
+		property := PropertyMap[propertyId]
+		if property == nil {
+			return false, fmt.Errorf("property/state '%s' not available", propertyId)
 		}
+		var err error
+		fieldValue, err = property.Value(process, false)
+		if err != nil {
+			return false, err
+		}
+		comparator = property.GetComparator()
+	} else {
+		return false, fmt.Errorf("invalid filter field: '%s'", f.field)
 	}
 
 	switch f.operator {
 	case "=":
-		return defaultCompare(fieldValue, f.value, caseInsensitive), nil
+		return comparator.Equal(fieldValue, f.value)
 	case "==":
-		return defaultCompare(fieldValue, f.value, caseInsensitive), nil
+		return comparator.Equal(fieldValue, f.value)
 	case "!=":
-		return !defaultCompare(fieldValue, f.value, caseInsensitive), nil
+		isEqual, err := comparator.Equal(fieldValue, f.value)
+		if err != nil {
+			return false, err
+		}
+		return !isEqual, nil
+	case ">":
+		return comparator.Greater(fieldValue, f.value)
 	}
 
 	return false, nil

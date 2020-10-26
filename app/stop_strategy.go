@@ -4,6 +4,13 @@ import (
 	"syscall"
 )
 
+type StopStrategyConfig struct {
+	Script       *ScriptStopStrategyConfig
+	Signal       *SignalStopStrategyConfig
+	MaxWaitTime  string
+	IntervalTime string
+}
+
 type StopStrategy interface {
 	Stop(process *Process) error
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/facebookgo/pidfile"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -40,13 +41,15 @@ func CreateCliApp() (*cli.App, error) {
 
 	return &cli.App{
 		Before: func(c *cli.Context) error {
+			noColor := c.Bool("no-color")
+			color.NoColor = noColor
 			logLevelString := c.String("loglevel")
 			level, err := logrus.ParseLevel(logLevelString)
 			if err != nil {
 				return fmt.Errorf("Unable to parse loglevel '%s'\n", logLevelString)
 			}
 			logrus.SetLevel(level)
-			color.NoColor = c.Bool("no-color")
+			logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true, DisableColors: noColor})
 			CurrentContext.OutputWriter = os.Stdout
 			return nil
 
@@ -74,6 +77,72 @@ func CreateCliApp() (*cli.App, error) {
 				Usage: "show the version information",
 				Action: func(c *cli.Context) error {
 					return fmt.Errorf("__TO_BE_IMPLEMENTED__")
+				},
+			},
+			{
+				Name:  "agent",
+				Usage: "pctl agent command group",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "pid-file",
+						EnvVars: []string{"PCTL_AGENT_PID_FILE"},
+						Usage:   "Path to the file to store and read the agent pid",
+						Value:   "/tmp/pctl-agent.pid",
+					},
+				},
+				Before: func(context *cli.Context) error {
+					pidfile.SetPidfilePath(context.String("pid-file"))
+					return nil
+				},
+				Subcommands: []*cli.Command{
+					{
+						Name:  "start",
+						Usage: "start the pctl agent",
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:    "log-path",
+								EnvVars: []string{"PCTL_AGENT_LOG_PATH"},
+							},
+
+							&cli.BoolFlag{
+								Name:    "detach",
+								Usage:   "detach mode - run the agent in the background",
+								Aliases: []string{"d"},
+								EnvVars: []string{"PCTL_AGENT_DETACH"},
+							},
+						},
+						Action: func(c *cli.Context) error {
+							return AgentStartCommand(c.String("log-path"), c.Bool("detach"))
+						},
+					},
+					{
+						Name:  "stop",
+						Usage: "stop the pctl agent",
+						Action: func(c *cli.Context) error {
+							return AgentStopCommand()
+						},
+					},
+					{
+						Name:  "reload",
+						Usage: "reload the configuration",
+						Action: func(c *cli.Context) error {
+							return AgentReloadCommand()
+						},
+					},
+					{
+						Name:  "status",
+						Usage: "prints the agent status",
+						Flags: []cli.Flag{
+							&cli.BoolFlag{
+								Name:    "derive-exit-code",
+								Aliases: []string{"e"},
+								Usage:   "set exit code to 1 if agent is not running",
+							},
+						},
+						Action: func(c *cli.Context) error {
+							return AgentStatusCommand(c.Bool("derive-exit-code"))
+						},
+					},
 				},
 			},
 			{
@@ -131,7 +200,7 @@ func CreateCliApp() (*cli.App, error) {
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:     "format",
-						EnvVars:  []string{"PCTL_OUTPUT_FORMAT"},
+						EnvVars:  []string{"PCTL_INFO_FORMAT"},
 						Required: false,
 						Value:    "default",
 						Usage: func() string {
@@ -140,6 +209,20 @@ func CreateCliApp() (*cli.App, error) {
 								keys = append(keys, k)
 							}
 							return "formats: " + strings.Join(keys, ",")
+						}(),
+					},
+					&cli.StringFlag{
+						Name:     "columns",
+						EnvVars:  []string{"PCTL_INFO_COLUMNS"},
+						Required: false,
+						Aliases:  []string{"c"},
+						Value:    "group,name,pid,status",
+						Usage: func() string {
+							columns := make([]string, 0, len(PropertyMap))
+							for k := range PropertyMap {
+								columns = append(columns, k)
+							}
+							return "comma separated list of columns, available: " + strings.Join(columns, ",")
 						}(),
 					},
 					filtersFlag,
@@ -154,7 +237,8 @@ func CreateCliApp() (*cli.App, error) {
 					if format == "" {
 						format = "default"
 					}
-					return InfoCommand(c.Args().Slice(), format, filters)
+					columns := strings.Split(c.String("columns"), ",")
+					return InfoCommand(c.Args().Slice(), format, filters, columns)
 				},
 			},
 		},

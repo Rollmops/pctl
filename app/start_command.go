@@ -3,19 +3,24 @@ package app
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"strings"
 	"sync"
 	"time"
 )
 
 func StartCommand(names []string, filters []string, comment string) error {
-	processes, err := CurrentContext.Config.CollectSyncedProcessesByNameSpecifiers(names, filters, len(filters) > 0)
+	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, len(filters) > 0)
 	if err != nil {
 		return err
 	}
 	if len(processes) == 0 {
-		return fmt.Errorf("no matching process config for name specifiers: %s", strings.Join(names, ", "))
+		return fmt.Errorf(MsgNoMatchingProcess)
 	}
+
+	err = CurrentContext.Processes.SyncRunningInfo()
+	if err != nil {
+		return err
+	}
+
 	processStateMap, err := NewProcessStateMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOn

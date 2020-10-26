@@ -7,6 +7,13 @@ import (
 	"strconv"
 )
 
+type ScriptStopStrategyConfig struct {
+	Path          string
+	Args          []string
+	ForwardStdout bool `yaml:"forwardStdout"`
+	ForwardStderr bool `yaml:"forwardStderr"`
+}
+
 type ScriptStopStrategy struct {
 	ScriptStopStrategyConfig
 }

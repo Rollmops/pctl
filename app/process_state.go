@@ -35,7 +35,7 @@ func (c *ProcessState) AddDependency(d *ProcessState) {
 	c.dependencies = append(c.dependencies, d)
 }
 
-func NewProcessStateMap(processes []*Process, dependencyGetter func(*Process) []string) (*map[string]*ProcessState, error) {
+func NewProcessStateMap(processes ProcessList, dependencyGetter func(*Process) []string) (*map[string]*ProcessState, error) {
 	processStateMap := make(map[string]*ProcessState)
 	var err error
 	for _, p := range processes {
@@ -55,7 +55,8 @@ func addToProcessStateMap(p *Process, processStateMap map[string]*ProcessState, 
 		}
 	}
 	for _, d := range dependencyGetter(p) {
-		depProcess, err := CurrentContext.GetProcessByName(d)
+		processConfig := CurrentContext.Config.FindByName(d)
+		depProcess, err := CurrentContext.GetProcessByConfig(processConfig)
 		if err != nil {
 			return nil, err
 		}

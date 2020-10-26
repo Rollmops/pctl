@@ -29,6 +29,7 @@ type JsonConsoleOutput struct {
 
 type ProcessInfo struct {
 	Pid              int32                    `json:"pid"`
+	Nice             int32                    `json:"nice"`
 	Cwd              string                   `json:"cwd"`
 	IsRunning        bool                     `json:"isRunning"`
 	CPUPercent       float64                  `json:"cpuPercent"`
@@ -44,6 +45,7 @@ type ProcessInfo struct {
 
 type JsonInfoEntry struct {
 	Name              string       `json:"name"`
+	Group             string       `json:"group"`
 	ConfiguredCommand []string     `json:"configuredCommand"`
 	RunningCommand    []string     `json:"runningCommand"`
 	IsRunning         bool         `json:"isRunning"`
@@ -57,7 +59,7 @@ func (j *JsonConsoleOutput) SetWriter(writer *os.File) {
 	j.writer = writer
 }
 
-func (j *JsonConsoleOutput) Write(processes []*Process) error {
+func (j *JsonConsoleOutput) Write(processes ProcessList, _ []string) error {
 	var jsonInfoEntries []*JsonInfoEntry
 
 	for _, p := range processes {
@@ -151,7 +153,12 @@ func getJsonProcessInfo(gopsutilProcess *gopsutil.Process) (*ProcessInfo, error)
 		return nil, err
 	}
 	createTimeString := time.Unix(createTime/1000, 0)
+	nice, err := gopsutilProcess.Nice()
+	if err != nil {
+		return nil, err
+	}
 	runningInfo = &ProcessInfo{
+		Nice:             nice,
 		Pid:              gopsutilProcess.Pid,
 		Cwd:              cwd,
 		IsRunning:        isRunning,
