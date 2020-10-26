@@ -77,11 +77,3 @@ func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string) error {
 		time.Sleep(10 * time.Millisecond)
 	}
 }
-
-/*
-	- get persistence data entry for name
-	  - if not present (assume not running), start process
-	  - if present, check state
-	    - state: running -> do nothing (already running)
-		- state: stopped unexpected -> start process
-*/

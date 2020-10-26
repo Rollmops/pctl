@@ -68,10 +68,15 @@ func (c *Config) CollectProcessesByNameSpecifiers(nameSpecifiers []string, filte
 		}
 	}
 	logrus.Tracef("Found %d process configs for name specifiers: %v", len(returnProcesses), nameSpecifiers)
+
 	return getFilteredProcesses(returnProcesses, filters)
 }
 
 func getFilteredProcesses(processes ProcessList, filterPatterns []string) ([]*Process, error) {
+	err := processes.SyncRunningInfo()
+	if err != nil {
+		return nil, err
+	}
 	if len(filterPatterns) > 0 {
 		var filteredProcesses ProcessList
 		for _, filterPattern := range filterPatterns {

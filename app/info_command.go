@@ -10,18 +10,12 @@ func InfoCommand(names []string, format string, filters []string, columns []stri
 		return fmt.Errorf("unknown format: %s", format)
 	}
 	o.SetWriter(CurrentContext.OutputWriter)
-
 	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, true)
 	if err != nil {
 		return err
 	}
-
 	if len(processes) == 0 {
 		return fmt.Errorf(MsgNoMatchingProcess)
-	}
-	err = processes.SyncRunningInfo()
-	if err != nil {
-		return err
 	}
 	return o.Write(processes, columns)
 }
