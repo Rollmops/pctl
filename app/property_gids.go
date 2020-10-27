@@ -16,8 +16,8 @@ func (*GidsProperty) Name() string {
 }
 
 func (*GidsProperty) Value(p *Process, _ bool) (string, error) {
-	if p.Info != nil && p.IsRunning() {
-		gids, err := p.Info.GoPsutilProcess.Gids()
+	if p.RunningInfo != nil && p.IsRunning() {
+		gids, err := p.RunningInfo.GopsutilProcess.Gids()
 		if err != nil {
 			return err.Error(), nil
 		} else {

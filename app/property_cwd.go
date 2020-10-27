@@ -11,8 +11,8 @@ func (*CwdProperty) Name() string {
 }
 
 func (*CwdProperty) Value(p *Process, _ bool) (string, error) {
-	if p.Info != nil && p.IsRunning() {
-		cwd, err := p.Info.GoPsutilProcess.Cwd()
+	if p.RunningInfo != nil && p.IsRunning() {
+		cwd, err := p.RunningInfo.GopsutilProcess.Cwd()
 		if err != nil {
 			return err.Error(), nil
 		} else {

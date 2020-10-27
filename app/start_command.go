@@ -57,10 +57,10 @@ func (c *ProcessState) Start(comment string) error {
 }
 
 func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string) error {
+	defer wg.Done()
 	if c.Process.IsRunning() {
 		c.started = true
 		fmt.Printf(WarningColor("Process '%s' is already running\n", c.Process.Config.Name))
-		wg.Done()
 		return nil
 	}
 	for {
@@ -71,7 +71,6 @@ func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string) error {
 			} else {
 				fmt.Printf(OkColor("Started process '%s'\n", c.Process.Config.Name))
 			}
-			wg.Done()
 			return err
 		}
 		time.Sleep(10 * time.Millisecond)

@@ -70,16 +70,16 @@ func (j *JsonConsoleOutput) Write(processes ProcessList, _ []string) error {
 		var jsonRunningInfo *ProcessInfo
 		if p.IsRunning() {
 			var err error
-			jsonRunningInfo, err = getJsonProcessInfo(p.Info.GoPsutilProcess)
+			jsonRunningInfo, err = getJsonProcessInfo(p.RunningInfo.GopsutilProcess)
 			if err != nil {
 				return err
 			}
 			jsonInfoEntry.IsRunning = true
-			jsonInfoEntry.RunningCommand = p.Info.RunningCommand
+			jsonInfoEntry.RunningCommand = p.RunningInfo.Config.Command
 			jsonInfoEntry.Info = jsonRunningInfo
-			jsonInfoEntry.Dirty = p.Info.Dirty
-			jsonInfoEntry.DirtyCommand = p.Info.DirtyCommand
-			jsonInfoEntry.DirtyCommandArgs = p.Info.DirtyMd5Hashes
+			jsonInfoEntry.Dirty = p.RunningInfo.Dirty
+			jsonInfoEntry.DirtyCommand = p.RunningInfo.DirtyCommand
+			jsonInfoEntry.DirtyCommandArgs = p.RunningInfo.DirtyMd5Hashes
 
 		}
 		jsonInfoEntries = append(jsonInfoEntries, jsonInfoEntry)

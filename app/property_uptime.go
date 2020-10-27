@@ -14,8 +14,8 @@ func (*UptimeProperty) Name() string {
 
 func (*UptimeProperty) Value(p *Process, _ bool) (string, error) {
 	var uptime string
-	if p.Info != nil && p.IsRunning() {
-		createTime, err := p.Info.GoPsutilProcess.CreateTime()
+	if p.RunningInfo != nil && p.IsRunning() {
+		createTime, err := p.RunningInfo.GopsutilProcess.CreateTime()
 		if err != nil {
 			uptime = "error"
 		}

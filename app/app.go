@@ -74,6 +74,6 @@ func Run(args []string) error {
 	if err != nil {
 		return err
 	}
-
+	logrus.Debug("Initialization finished")
 	return pctlApp.Run(args)
 }

@@ -28,11 +28,11 @@ func (s *SignalStopStrategy) Stop(p *Process) error {
 		if prs == false {
 			return fmt.Errorf("invalid signal name: '%s'", s.SignalString)
 		}
-		return p.Info.GoPsutilProcess.SendSignal(signal)
+		return p.RunningInfo.GopsutilProcess.SendSignal(signal)
 	}
 	signal := s.Signal
 	if signal == 0 {
 		signal = syscall.SIGTERM
 	}
-	return p.Info.GoPsutilProcess.SendSignal(signal)
+	return p.RunningInfo.GopsutilProcess.SendSignal(signal)
 }

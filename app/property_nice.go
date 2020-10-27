@@ -13,8 +13,8 @@ func (*NiceProperty) Name() string {
 }
 
 func (*NiceProperty) Value(p *Process, _ bool) (string, error) {
-	if p.Info != nil && p.IsRunning() {
-		nice, err := p.Info.GoPsutilProcess.Nice()
+	if p.RunningInfo != nil && p.IsRunning() {
+		nice, err := p.RunningInfo.GopsutilProcess.Nice()
 		if err != nil {
 			return err.Error(), nil
 		} else {

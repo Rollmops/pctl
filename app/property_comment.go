@@ -11,8 +11,8 @@ func (*CommentProperty) Name() string {
 }
 
 func (*CommentProperty) Value(p *Process, _ bool) (string, error) {
-	if p.Info != nil {
-		return p.Info.Comment, nil
+	if p.RunningInfo != nil {
+		return p.RunningInfo.Comment, nil
 	}
 	return "", nil
 }

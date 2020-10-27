@@ -17,8 +17,8 @@ func (*CpuPercentProperty) Name() string {
 }
 
 func (*CpuPercentProperty) Value(p *Process, _ bool) (string, error) {
-	if p.Info != nil && p.IsRunning() {
-		cpuPercent, err := p.Info.GoPsutilProcess.CPUPercent()
+	if p.RunningInfo != nil && p.IsRunning() {
+		cpuPercent, err := p.RunningInfo.GopsutilProcess.CPUPercent()
 		if err != nil {
 			return "error", nil
 		} else {
@@ -31,8 +31,8 @@ func (*CpuPercentProperty) Value(p *Process, _ bool) (string, error) {
 func (*CpuPercentProperty) FormattedSumValue(processList ProcessList) (string, error) {
 	var cpuPercentSum float64
 	for _, p := range processList {
-		if p.Info != nil && p.IsRunning() {
-			cpuPercent, err := p.Info.GoPsutilProcess.CPUPercent()
+		if p.RunningInfo != nil && p.IsRunning() {
+			cpuPercent, err := p.RunningInfo.GopsutilProcess.CPUPercent()
 			if err == nil {
 				cpuPercentSum += cpuPercent
 			}

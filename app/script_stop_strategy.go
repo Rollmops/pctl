@@ -20,7 +20,7 @@ type ScriptStopStrategy struct {
 
 func (s *ScriptStopStrategy) Stop(process *Process) error {
 	mapping := map[string]string{
-		"pid":  strconv.Itoa(int(process.Info.GoPsutilProcess.Pid)),
+		"pid":  strconv.Itoa(int(process.RunningInfo.GopsutilProcess.Pid)),
 		"name": process.Config.Name,
 	}
 	stopScriptPath := ExpandPath(s.Path)

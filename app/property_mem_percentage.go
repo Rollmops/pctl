@@ -17,8 +17,8 @@ func (*MemPercentageProperty) Name() string {
 }
 
 func (*MemPercentageProperty) Value(p *Process, _ bool) (string, error) {
-	if p.Info != nil && p.IsRunning() {
-		memPercentage, err := p.Info.GoPsutilProcess.MemoryPercent()
+	if p.RunningInfo != nil && p.IsRunning() {
+		memPercentage, err := p.RunningInfo.GopsutilProcess.MemoryPercent()
 		if err != nil {
 			return err.Error(), nil
 		} else {
@@ -31,8 +31,8 @@ func (*MemPercentageProperty) Value(p *Process, _ bool) (string, error) {
 func (*MemPercentageProperty) FormattedSumValue(processList ProcessList) (string, error) {
 	var memPercentageSum float32
 	for _, p := range processList {
-		if p.Info != nil && p.IsRunning() {
-			memPercentage, err := p.Info.GoPsutilProcess.MemoryPercent()
+		if p.RunningInfo != nil && p.IsRunning() {
+			memPercentage, err := p.RunningInfo.GopsutilProcess.MemoryPercent()
 			if err != nil {
 				return "", err
 			}

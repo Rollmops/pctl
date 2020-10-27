@@ -14,8 +14,8 @@ func (*VmsProperty) Name() string {
 
 func (*VmsProperty) Value(p *Process, _ bool) (string, error) {
 	var vms string
-	if p.Info != nil && p.IsRunning() {
-		memoryInfo, err := p.Info.GoPsutilProcess.MemoryInfo()
+	if p.RunningInfo != nil && p.IsRunning() {
+		memoryInfo, err := p.RunningInfo.GopsutilProcess.MemoryInfo()
 		if err != nil {
 			vms = "error"
 		} else {
@@ -28,8 +28,8 @@ func (*VmsProperty) Value(p *Process, _ bool) (string, error) {
 func (*VmsProperty) FormattedSumValue(processList ProcessList) (string, error) {
 	var vmsSum uint64
 	for _, p := range processList {
-		if p.Info != nil && p.IsRunning() {
-			memoryInfo, err := p.Info.GoPsutilProcess.MemoryInfo()
+		if p.RunningInfo != nil && p.IsRunning() {
+			memoryInfo, err := p.RunningInfo.GopsutilProcess.MemoryInfo()
 			if err == nil {
 				vmsSum += memoryInfo.VMS
 			}

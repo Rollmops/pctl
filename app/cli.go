@@ -217,6 +217,25 @@ func CreateCliApp() (*cli.App, error) {
 				},
 			},
 			{
+				Name:      "kill",
+				Usage:     "kill process(es)",
+				ArgsUsage: UsageNameSpecifiers,
+				Flags: []cli.Flag{
+					filtersFlag,
+					runningFlag,
+					stoppedFlag,
+					dirtyFlag,
+				},
+				Action: func(c *cli.Context) error {
+					filters := c.StringSlice("filter")
+					filters = addShortcutFilters(c, filters)
+					if c.NArg() == 0 && len(filters) == 0 {
+						return fmt.Errorf("missing process names or filters")
+					}
+					return KillCommand(c.Args().Slice(), filters)
+				},
+			},
+			{
 				Name:      "info",
 				Usage:     "show info for all or specified processes",
 				ArgsUsage: "a list of process names - if empty, info of all processes will be shown",

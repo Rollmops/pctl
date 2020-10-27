@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -18,41 +17,32 @@ import (
 
 type ProcessList []*Process
 
-type Info struct {
+type RunningInfo struct {
 	Comment         string
-	RunningCommand  []string
-	DirtyCommand    bool
+	Config          ProcessConfig
 	DirtyMd5Hashes  []string
-	GoPsutilProcess *gopsutil.Process
+	DirtyCommand    bool
 	Dirty           bool
-}
-
-type RunningEnvironInfo struct {
-	Config    ProcessConfig
-	Pid       int32
-	Comment   string
-	Md5Hashes map[string]string
+	Pid             int32
+	Md5Hashes       map[string]string
+	GopsutilProcess *gopsutil.Process
 }
 
 type Process struct {
-	Config *ProcessConfig
-	Info   *Info
-	Pid    int32
+	Config      *ProcessConfig
+	RunningInfo *RunningInfo
 }
 
 func (l *ProcessList) SyncRunningInfo() error {
 	for _, p := range *l {
-		err := p.SyncRunningInfo()
-		if err != nil {
-			return err
-		}
+		p.SyncRunningInfo()
 	}
 	return nil
 }
 
 func (p *Process) IsRunning() bool {
-	if p.Info != nil {
-		isRunning, err := p.Info.GoPsutilProcess.IsRunning()
+	if p.RunningInfo != nil {
+		isRunning, err := p.RunningInfo.GopsutilProcess.IsRunning()
 		if err != nil || !isRunning {
 			return false
 		} else {
@@ -76,25 +66,7 @@ func (p *Process) Start(comment string) error {
 	for key, value := range p.Config.Env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
-
-	err = cmd.Start()
-	if err != nil {
-		return err
-	}
-
-	err = CurrentContext.Cache.Refresh()
-	if err != nil {
-		return err
-	}
-	err = p.SyncRunningInfo()
-	if err != nil {
-		return err
-	}
-	if !p.IsRunning() {
-		return fmt.Errorf("startup probe failed")
-	}
-
-	return nil
+	return cmd.Start()
 }
 
 func (p *Process) WaitForReady() error {
@@ -137,57 +109,14 @@ func (p *Process) WaitForStop(timeout time.Duration, intervalDuration time.Durat
 }
 
 func (p *Process) Kill() error {
-	return p.Info.GoPsutilProcess.SendSignal(syscall.SIGKILL)
+	return p.RunningInfo.GopsutilProcess.SendSignal(syscall.SIGKILL)
 }
 
-func (p *Process) SyncRunningInfo() error {
-	runningInfo := CurrentContext.Cache.FindRunningInfoByGroupAndName(p.Config.Group, p.Config.Name)
-	return p.setRunningInfo(runningInfo)
+func (p *Process) SyncRunningInfo() {
+	p.RunningInfo = CurrentContext.Cache.FindRunningInfoByGroupAndName(p.Config.Group, p.Config.Name)
 }
 
-func (p *Process) setRunningInfo(runningInfo *RunningEnvironInfo) error {
-	logrus.Tracef("Syncing process info for '%s'", p.Config.Name)
-	if runningInfo != nil {
-		dirtyHashes, err := collectDirtyHashes(&p.Config.Command, runningInfo)
-		if err != nil {
-			return err
-		}
-		dirtyCommand := !CompareStringSlices(runningInfo.Config.Command, p.Config.Command)
-		gopsutilProcess, err := gopsutil.NewProcess(runningInfo.Pid)
-		if err != nil {
-			return err
-		}
-		p.Info = &Info{
-			DirtyMd5Hashes:  *dirtyHashes,
-			Comment:         runningInfo.Comment,
-			RunningCommand:  runningInfo.Config.Command,
-			DirtyCommand:    dirtyCommand,
-			Dirty:           dirtyCommand || len(*dirtyHashes) > 0,
-			GoPsutilProcess: gopsutilProcess,
-		}
-		p.Pid = runningInfo.Pid
-	}
-	return nil
-}
-
-func collectDirtyHashes(command *[]string, runningInfo *RunningEnvironInfo) (*[]string, error) {
-	logrus.Tracef("Collecting dirty file hashes from command '%v'", *command)
-	var returnDirtyHashes []string
-	md5hashes, err := CreateFileHashesFromCommand(*command)
-	if err != nil {
-		return nil, err
-	}
-	for arg, hash := range *md5hashes {
-		runningHash := runningInfo.Md5Hashes[arg]
-		if runningHash != hash {
-			logrus.Tracef("Found dirty hash for arg '%s': %s != %s", arg, runningHash, hash)
-			returnDirtyHashes = append(returnDirtyHashes, arg)
-		}
-	}
-	return &returnDirtyHashes, nil
-}
-
-func FindProcessRunningInfo(pid int32) (*RunningEnvironInfo, error) {
+func FindProcessRunningInfo(pid int32) (*RunningInfo, error) {
 	runningInfo, err := findRunningEnvironInfoFromPid(pid)
 	if err != nil {
 		return nil, err
@@ -196,11 +125,11 @@ func FindProcessRunningInfo(pid int32) (*RunningEnvironInfo, error) {
 		return nil, nil
 	}
 
-	proc, err := gopsutil.NewProcess(pid)
+	gopsutilProcess, err := gopsutil.NewProcess(pid)
 	if err != nil {
 		return nil, err
 	}
-	ppid, err := proc.Ppid()
+	ppid, err := gopsutilProcess.Ppid()
 	if err != nil {
 		return nil, err
 	}
@@ -208,14 +137,16 @@ func FindProcessRunningInfo(pid int32) (*RunningEnvironInfo, error) {
 	if runningInfoFromParent != nil {
 		return runningInfoFromParent, nil
 	}
+	runningInfo.GopsutilProcess = gopsutilProcess
+	//runningInfo.DirtyMd5Hashes, _ = collectDirtyHashes(&runningInfo.Config.Command, runningInfo)
 	return runningInfo, nil
 }
 
-func findRunningEnvironInfoFromPid(pid int32) (*RunningEnvironInfo, error) {
+func findRunningEnvironInfoFromPid(pid int32) (*RunningInfo, error) {
 	envString := getProcessEnvironVariable(pid, "__PCTL_INFO__")
 	if envString != "" {
 		envJson := strings.SplitN(envString, "=", 2)[1]
-		var runningInfo RunningEnvironInfo
+		var runningInfo RunningInfo
 		err := json.Unmarshal([]byte(envJson), &runningInfo)
 		if err != nil {
 			return nil, err
@@ -230,13 +161,10 @@ func getProcessEnvironVariable(pid int32, name string) string {
 	envFilePath := path.Join("/", "proc", strconv.Itoa(int(pid)), "environ")
 	envContent, err := ioutil.ReadFile(envFilePath)
 	if err == nil {
-		envContentString := string(envContent)
-		if strings.Contains(envContentString, name) {
-			envStrings := strings.Split(string(envContent), "\000")
-			for _, envString := range envStrings {
-				if strings.HasPrefix(envString, name) {
-					return envString
-				}
+		envStrings := strings.Split(string(envContent), "\000")
+		for _, envString := range envStrings {
+			if strings.HasPrefix(envString, name) {
+				return envString
 			}
 		}
 	}
@@ -248,7 +176,7 @@ func createRunningInfoJson(comment string, p *Process) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	runningEnvironInfo := RunningEnvironInfo{
+	runningEnvironInfo := RunningInfo{
 		Config:    *p.Config,
 		Comment:   comment,
 		Md5Hashes: *md5hashes,

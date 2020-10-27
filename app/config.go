@@ -79,7 +79,6 @@ func (c *Config) CollectProcessesByNameSpecifiers(nameSpecifiers []string, filte
 		}
 	}
 	logrus.Tracef("Found %d process configs for name specifiers: %v", len(returnProcesses), nameSpecifiers)
-
 	return getFilteredProcesses(returnProcesses, filters)
 }
 

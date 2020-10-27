@@ -13,8 +13,8 @@ func (*UsernameProperty) Name() string {
 }
 
 func (*UsernameProperty) Value(p *Process, _ bool) (string, error) {
-	if p.Info != nil && p.IsRunning() {
-		username, err := p.Info.GoPsutilProcess.Username()
+	if p.RunningInfo != nil && p.IsRunning() {
+		username, err := p.RunningInfo.GopsutilProcess.Username()
 		if err != nil {
 			return err.Error(), nil
 		} else {

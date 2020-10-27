@@ -16,17 +16,17 @@ func (*DirtyProperty) Name() string {
 }
 
 func (*DirtyProperty) Value(p *Process, formatted bool) (string, error) {
-	if p.Info != nil {
+	if p.RunningInfo != nil {
 		if !formatted {
-			return strconv.FormatBool(p.Info.Dirty), nil
+			return strconv.FormatBool(p.RunningInfo.Dirty), nil
 		}
-		if p.Info.Dirty {
+		if p.RunningInfo.Dirty {
 			var dirtyParts []string
-			if p.Info.DirtyCommand {
+			if p.RunningInfo.DirtyCommand {
 				dirtyParts = append(dirtyParts, "command changed")
 			}
-			if len(p.Info.DirtyMd5Hashes) > 0 {
-				dirtyHashesString := strings.Join(p.Info.DirtyMd5Hashes, ",")
+			if len(p.RunningInfo.DirtyMd5Hashes) > 0 {
+				dirtyHashesString := strings.Join(p.RunningInfo.DirtyMd5Hashes, ",")
 				dirtyParts = append(dirtyParts, "md5sum: "+dirtyHashesString)
 			}
 			return WarningColor(strings.Join(dirtyParts, " | ")), nil

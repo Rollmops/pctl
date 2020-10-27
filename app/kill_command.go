@@ -2,12 +2,11 @@ package app
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
 
-func StopCommand(names []string, filters []string, noWait bool) error {
+func KillCommand(names []string, filters []string) error {
 	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, len(filters) > 0)
 	if err != nil {
 		return err
@@ -33,34 +32,18 @@ func StopCommand(names []string, filters []string, noWait bool) error {
 	wg.Add(len(*processStateMap))
 
 	for _, processState := range *processStateMap {
-		go processState.StopAsync(noWait, &wg)
+		go processState.KillAsync(&wg)
 	}
 
 	wg.Wait()
 	return nil
 }
 
-func (c *ProcessState) Stop(noWait bool) error {
-	err := c.Process.Stop()
-	if err != nil {
-		return err
-	}
-
-	if !noWait {
-		err = c.Process.WaitForStop(5*time.Second, 100*time.Millisecond)
-		if err != nil {
-			// TODO kill if configured
-			return err
-		}
-	}
-
-	log.Debugf("Stopped process '%s'", c.Process.Config.Name)
-	c.stopped = true
-	return nil
-}
-
-func (c *ProcessState) StopAsync(noWait bool, wg *sync.WaitGroup) error {
-	defer wg.Done()
+func (c *ProcessState) KillAsync(wg *sync.WaitGroup) error {
+	defer func() {
+		wg.Done()
+		c.stopped = true
+	}()
 	if !c.Process.IsRunning() {
 		c.stopped = true
 		fmt.Printf(WarningColor("Process '%s' has already stopped\n", c.Process.Config.Name))
@@ -68,11 +51,11 @@ func (c *ProcessState) StopAsync(noWait bool, wg *sync.WaitGroup) error {
 	}
 	for {
 		if c.IsReadyToStop() {
-			err := c.Stop(noWait)
+			err := c.Process.Kill()
 			if err != nil {
-				fmt.Printf(FailedColor("Failed to stop '%s' (%s)\n", c.Process.Config.Name, err))
+				fmt.Printf(FailedColor("Failed to kill '%s' (%s)\n", c.Process.Config.Name, err))
 			} else {
-				fmt.Printf(OkColor("Stopped process '%s'\n", c.Process.Config.Name))
+				fmt.Printf(OkColor("Killed process '%s'\n", c.Process.Config.Name))
 			}
 			return err
 		}

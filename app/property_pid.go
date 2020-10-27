@@ -16,7 +16,7 @@ func (*PidProperty) Name() string {
 
 func (*PidProperty) Value(p *Process, _ bool) (string, error) {
 	if p.IsRunning() {
-		return strconv.Itoa(int(p.Pid)), nil
+		return strconv.Itoa(int(p.RunningInfo.Pid)), nil
 	}
 	return "", nil
 }

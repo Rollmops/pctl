@@ -14,8 +14,8 @@ func (*RssProperty) Name() string {
 
 func (*RssProperty) Value(p *Process, _ bool) (string, error) {
 	var rss string
-	if p.Info != nil && p.IsRunning() {
-		memoryInfo, err := p.Info.GoPsutilProcess.MemoryInfo()
+	if p.RunningInfo != nil && p.IsRunning() {
+		memoryInfo, err := p.RunningInfo.GopsutilProcess.MemoryInfo()
 		if err != nil {
 			rss = "error"
 		} else {
@@ -28,8 +28,8 @@ func (*RssProperty) Value(p *Process, _ bool) (string, error) {
 func (*RssProperty) FormattedSumValue(processList ProcessList) (string, error) {
 	var rssSum uint64
 	for _, p := range processList {
-		if p.Info != nil && p.IsRunning() {
-			memoryInfo, err := p.Info.GoPsutilProcess.MemoryInfo()
+		if p.RunningInfo != nil && p.IsRunning() {
+			memoryInfo, err := p.RunningInfo.GopsutilProcess.MemoryInfo()
 			if err == nil {
 				rssSum += memoryInfo.RSS
 			}
