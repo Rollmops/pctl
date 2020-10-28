@@ -46,7 +46,7 @@ func CreateCliApp() (*cli.App, error) {
 			logLevelString := c.String("loglevel")
 			level, err := logrus.ParseLevel(logLevelString)
 			if err != nil {
-				return fmt.Errorf("Unable to parse loglevel '%s'\n", logLevelString)
+				return fmt.Errorf("Unable to parse loglevel %s\n", logLevelString)
 			}
 			logrus.SetLevel(level)
 			logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true, DisableColors: noColor})

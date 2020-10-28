@@ -55,7 +55,10 @@ func addToProcessStateMap(p *Process, processStateMap map[string]*ProcessState, 
 		}
 	}
 	for _, d := range dependencyGetter(p) {
-		processConfig := CurrentContext.Config.FindByName(d)
+		processConfig, err := CurrentContext.Config.FindByGroupNameSpecifier(d)
+		if err != nil {
+			return nil, err
+		}
 		depProcess, err := CurrentContext.GetProcessByConfig(processConfig)
 		if err != nil {
 			return nil, err

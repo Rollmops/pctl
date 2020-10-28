@@ -20,7 +20,7 @@ type GroupNameSpecifier struct {
 func NewGroupNameSpecifier(specifier string) (*GroupNameSpecifier, error) {
 	match := groupNameSpecifierPatternRegex.FindStringSubmatch(specifier)
 	if len(match) != 4 {
-		return nil, fmt.Errorf("invalid name specifier pattern: '%s'", specifier)
+		return nil, fmt.Errorf("invalid name specifier pattern: %s", specifier)
 	}
 	group := match[1]
 	name := match[3]

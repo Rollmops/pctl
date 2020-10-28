@@ -21,7 +21,7 @@ type Filter struct {
 func NewFilter(pattern string) (*Filter, error) {
 	match := filterPatternRegex.FindStringSubmatch(pattern)
 	if len(match) != 4 {
-		return nil, fmt.Errorf("invalid filter pattern: '%s'", pattern)
+		return nil, fmt.Errorf("invalid filter pattern: %s", pattern)
 	}
 	return &Filter{
 		field:    match[1],
@@ -45,7 +45,7 @@ func (f *Filter) IsMatchingProcess(process *Process) (bool, error) {
 		propertyId := strings.Split(f.field, ".")[1]
 		property := PropertyMap[propertyId]
 		if property == nil {
-			return false, fmt.Errorf("property/state '%s' not available", propertyId)
+			return false, fmt.Errorf("property/state %s not available", propertyId)
 		}
 		var err error
 		fieldValue, err = property.Value(process, false)
@@ -54,7 +54,7 @@ func (f *Filter) IsMatchingProcess(process *Process) (bool, error) {
 		}
 		comparator = property.GetComparator()
 	} else {
-		return false, fmt.Errorf("invalid filter field: '%s'", f.field)
+		return false, fmt.Errorf("invalid filter field: %s", f.field)
 	}
 
 	switch f.operator {

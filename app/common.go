@@ -67,7 +67,7 @@ func ByteCountIEC(b uint64) string {
 		float64(b)/float64(div), "KMGTPE"[exp])
 }
 
-func DurationToString(d time.Duration) (string, error) {
+func DurationToString(d time.Duration) string {
 	var format string
 	if d > time.Hour*24 {
 		format = "%dd %hh"
@@ -78,7 +78,8 @@ func DurationToString(d time.Duration) (string, error) {
 	} else {
 		format = "%ss"
 	}
-	return durationfmt.Format(d, format)
+	durationString, _ := durationfmt.Format(d, format)
+	return durationString
 }
 
 func HashMd5File(filePath string) (string, error) {
@@ -118,28 +119,28 @@ func CreateFileHashesFromCommand(command []string) (*map[string]string, error) {
 }
 
 func GetFullPathFromFile(path string) (string, error) {
-	logrus.Tracef("Getting full path of '%s'", path)
+	logrus.Tracef("Getting full path of %s", path)
 	fullPath, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
 	}
-	logrus.Tracef("Trying absolute path '%s'", fullPath)
+	logrus.Tracef("Trying absolute path %s", fullPath)
 	if FileExists(fullPath) {
 		return fullPath, nil
 	}
 	fullPath, err = exec.LookPath(path)
-	logrus.Tracef("Trying lookup path '%s'", fullPath)
+	logrus.Tracef("Trying lookup path %s", fullPath)
 	if err != nil {
 		return "", err
 	}
 	if FileExists(fullPath) {
 		return fullPath, nil
 	}
-	return "", fmt.Errorf("unable to find path '%s'", path)
+	return "", fmt.Errorf("unable to find path %s", path)
 }
 
 func FileExists(path string) bool {
-	logrus.Tracef("Checking path '%s' exists", path)
+	logrus.Tracef("Checking path %s exists", path)
 	info, err := os.Lstat(path)
 	if err != nil {
 		if os.IsNotExist(err) {

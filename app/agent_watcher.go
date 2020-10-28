@@ -10,7 +10,7 @@ type AgentWatcher struct {
 }
 
 func (w *AgentWatcher) Start() {
-	logrus.Debugf("Starting watcher for process '%s'", w.processConfig.Name)
+	logrus.Debugf("Starting watcher for process %s", w.processConfig)
 	for {
 		time.Sleep(1 * time.Second)
 	}

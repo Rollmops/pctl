@@ -17,6 +17,7 @@ type Loader interface {
 type ProcessConfig struct {
 	Name             string
 	Group            string
+	WaitAfterStart   string              `yaml:"waitAfterStart"`
 	Command          []string            `yaml:"cmd"`
 	StopStrategy     *StopStrategyConfig `yaml:"stop"`
 	DependsOn        []string            `yaml:"dependsOn"`
@@ -44,17 +45,33 @@ func (c *Config) ExpandVars() {
 var SuffixConfigLoaderMap = make(map[string]Loader)
 
 func (c *ProcessConfig) String() string {
-	return fmt.Sprintf("ProcessConfig(group: %s, name: %s)", c.Group, c.Name)
+	if c.Group == "" {
+		return c.Name
+	}
+	return fmt.Sprintf("%s:%s", c.Group, c.Name)
 }
 
-func (c *Config) FindByName(name string) *ProcessConfig {
-	logrus.Tracef("Getting process config for name '%s'", name)
+func (c *Config) FindByGroupAndName(group string, name string) *ProcessConfig {
+	logrus.Tracef("Getting process config for name %s", name)
 	for _, p := range c.ProcessConfigs {
-		if p.Name == name {
+		if p.Group == group && p.Name == name {
 			return p
 		}
 	}
 	return nil
+}
+
+func (c *Config) FindByGroupNameSpecifier(groupNameSpecifier string) (*ProcessConfig, error) {
+	specifier, err := NewGroupNameSpecifier(groupNameSpecifier)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range c.ProcessConfigs {
+		if specifier.IsMatchingGroupAndName(p.Group, p.Name) {
+			return p, nil
+		}
+	}
+	return nil, nil
 }
 
 func (c *Config) CollectProcessesByNameSpecifiers(nameSpecifiers []string, filters []string, allIfNoSpecifiers bool) (ProcessList, error) {
@@ -109,15 +126,22 @@ func getFilteredProcesses(processes ProcessList, filterPatterns []string) ([]*Pr
 	return processes, nil
 }
 
-func (c *Config) FillDependsOnInverse() {
+func (c *Config) FillDependsOnInverse() error {
 	for _, pConfig := range c.ProcessConfigs {
 		for _, dependsOn := range pConfig.DependsOn {
-			dConfig := c.FindByName(dependsOn)
+			dConfig, err := c.FindByGroupNameSpecifier(dependsOn)
+			if err != nil {
+				return err
+			}
+			if dConfig == nil {
+				return fmt.Errorf("unable to find process config matching %s", dependsOn)
+			}
 			if !_isInList(dConfig.DependsOnInverse, pConfig.Name) {
 				dConfig.DependsOnInverse = append(dConfig.DependsOnInverse, pConfig.Name)
 			}
 		}
 	}
+	return nil
 }
 
 func _isInProcessList(name string, processes ProcessList) bool {

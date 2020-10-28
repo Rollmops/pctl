@@ -37,7 +37,12 @@ func (c *Context) Initialize() error {
 		return err
 	}
 	c.RefreshProcessesFromConfig()
-	return c.Cache.Refresh()
+	err = c.Cache.Refresh()
+	if err != nil {
+		return err
+	}
+	return CurrentContext.Processes.SyncRunningInfo()
+
 }
 
 func (c *Context) LoadConfig() error {
@@ -51,7 +56,10 @@ func (c *Context) LoadConfig() error {
 	if err != nil {
 		return err
 	}
-	c.Config.FillDependsOnInverse()
+	err = c.Config.FillDependsOnInverse()
+	if err != nil {
+		return err
+	}
 	c.Config.ExpandVars()
 	logrus.Debugf("Loaded %d process configuration(s)", len(c.Config.ProcessConfigs))
 	return ValidateAcyclicDependencies()

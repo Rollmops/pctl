@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 )
@@ -52,7 +53,11 @@ func AgentStartCommand(logPath string, detach bool) error {
 	_, isAgent := os.LookupEnv("__PCTL_AGENT__")
 	if !isAgent && detach {
 		env := []string{"__PCTL_AGENT__=1"}
-		pid, err := syscall.ForkExec(os.Args[0], os.Args,
+		pctlPath, err := exec.LookPath(os.Args[0])
+		if err != nil {
+			return err
+		}
+		pid, err := syscall.ForkExec(pctlPath, os.Args,
 			&syscall.ProcAttr{
 				Env: append(os.Environ(), env...),
 				Sys: &syscall.SysProcAttr{

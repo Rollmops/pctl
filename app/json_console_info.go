@@ -77,9 +77,9 @@ func (j *JsonConsoleOutput) Write(processes ProcessList, _ []string) error {
 			jsonInfoEntry.IsRunning = true
 			jsonInfoEntry.RunningCommand = p.RunningInfo.Config.Command
 			jsonInfoEntry.Info = jsonRunningInfo
-			jsonInfoEntry.Dirty = p.RunningInfo.Dirty
-			jsonInfoEntry.DirtyCommand = p.RunningInfo.DirtyCommand
-			jsonInfoEntry.DirtyCommandArgs = p.RunningInfo.DirtyMd5Hashes
+			jsonInfoEntry.Dirty = p.RunningInfo.DirtyInfo.IsDirty()
+			jsonInfoEntry.DirtyCommand = p.RunningInfo.DirtyInfo.DirtyCommand
+			jsonInfoEntry.DirtyCommandArgs = p.RunningInfo.DirtyInfo.DirtyMd5Hashes
 
 		}
 		jsonInfoEntries = append(jsonInfoEntries, jsonInfoEntry)

@@ -17,13 +17,10 @@ func (*UptimeProperty) Value(p *Process, _ bool) (string, error) {
 	if p.RunningInfo != nil && p.IsRunning() {
 		createTime, err := p.RunningInfo.GopsutilProcess.CreateTime()
 		if err != nil {
-			uptime = "error"
+			uptime = err.Error()
 		}
 		uptimeInt := time.Now().Sub(time.Unix(createTime/1000, 0))
-		uptime, err = DurationToString(uptimeInt)
-		if err != nil {
-			uptime = "error"
-		}
+		uptime = DurationToString(uptimeInt)
 	}
 	return uptime, nil
 }

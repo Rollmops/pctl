@@ -5,5 +5,9 @@ func RestartCommand(names []string, filters []string, comment string) error {
 	if err != nil {
 		return err
 	}
+	err = CurrentContext.Cache.Refresh()
+	if err != nil {
+		return err
+	}
 	return StartCommand(names, filters, comment)
 }

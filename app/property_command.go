@@ -18,7 +18,7 @@ func (*CommandProperty) Value(p *Process, formatted bool) (string, error) {
 	command := strings.Join(p.Config.Command, " ")
 	if p.RunningInfo != nil {
 		command = strings.Join(p.RunningInfo.Config.Command, " ")
-		if p.RunningInfo.DirtyCommand && formatted {
+		if p.RunningInfo.DirtyInfo.DirtyCommand && formatted {
 			return FailedColor(command), nil
 		}
 	}

@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
@@ -16,11 +15,6 @@ func StartCommand(names []string, filters []string, comment string) error {
 		return fmt.Errorf(MsgNoMatchingProcess)
 	}
 
-	err = CurrentContext.Processes.SyncRunningInfo()
-	if err != nil {
-		return err
-	}
-
 	processStateMap, err := NewProcessStateMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOn
@@ -30,46 +24,59 @@ func StartCommand(names []string, filters []string, comment string) error {
 	}
 
 	var wg sync.WaitGroup
+	consoleMessageChannel := make(ConsoleMessageChannel)
 	wg.Add(len(*processStateMap))
+
+	go func() {
+		wg.Wait()
+		close(consoleMessageChannel)
+	}()
 
 	for _, processState := range *processStateMap {
 		// TODO handle error
-		go processState.StartAsync(&wg, comment)
+		go processState.StartAsync(&wg, comment, &consoleMessageChannel)
 	}
-
-	wg.Wait()
+	consoleMessageChannel.PrintRelevant(processes)
 	return nil
 }
 
-func (c *ProcessState) Start(comment string) error {
+func (c *ProcessState) Start(comment string, consoleMessageChannel *ConsoleMessageChannel) error {
 	err := c.Process.Start(comment)
 	if err != nil {
 		return err
+	}
+
+	if c.Process.Config.WaitAfterStart != "" {
+		duration, err := time.ParseDuration(c.Process.Config.WaitAfterStart)
+		if err != nil {
+			return err
+		}
+		*consoleMessageChannel <- &ConsoleMessage{fmt.Sprintf("Waiting %s after starting %s\n", DurationToString(duration), c.Process.Config), c.Process}
+		time.Sleep(duration)
 	}
 
 	err = c.Process.WaitForReady()
 	if err != nil {
 		return err
 	}
-	log.Debugf("Started process '%s'", c.Process.Config.Name)
 	c.started = true
 	return nil
 }
 
-func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string) error {
+func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string, consoleMessageChannel *ConsoleMessageChannel) error {
 	defer wg.Done()
 	if c.Process.IsRunning() {
 		c.started = true
-		fmt.Printf(WarningColor("Process '%s' is already running\n", c.Process.Config.Name))
+		*consoleMessageChannel <- &ConsoleMessage{WarningColor("Process %s is already running\n", c.Process.Config), c.Process}
 		return nil
 	}
 	for {
 		if c.IsReadyToStart() {
-			err := c.Start(comment)
+			err := c.Start(comment, consoleMessageChannel)
 			if err != nil {
-				fmt.Printf(FailedColor("Failed to start '%s' (%s)\n", c.Process.Config.Name, err))
+				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Failed to start %s (%s)\n", c.Process.Config, err), c.Process}
 			} else {
-				fmt.Printf(OkColor("Started process '%s'\n", c.Process.Config.Name))
+				*consoleMessageChannel <- &ConsoleMessage{OkColor("Started process %s\n", c.Process.Config), c.Process}
 			}
 			return err
 		}

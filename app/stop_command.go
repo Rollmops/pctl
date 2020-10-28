@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
@@ -16,11 +15,6 @@ func StopCommand(names []string, filters []string, noWait bool) error {
 		return fmt.Errorf(MsgNoMatchingProcess)
 	}
 
-	err = CurrentContext.Processes.SyncRunningInfo()
-	if err != nil {
-		return err
-	}
-
 	processStateMap, err := NewProcessStateMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOnInverse
@@ -30,13 +24,19 @@ func StopCommand(names []string, filters []string, noWait bool) error {
 	}
 
 	var wg sync.WaitGroup
+	consoleMessageChannel := make(ConsoleMessageChannel)
 	wg.Add(len(*processStateMap))
 
+	go func() {
+		wg.Wait()
+		close(consoleMessageChannel)
+	}()
+
 	for _, processState := range *processStateMap {
-		go processState.StopAsync(noWait, &wg)
+		go processState.StopAsync(noWait, &wg, consoleMessageChannel)
 	}
 
-	wg.Wait()
+	consoleMessageChannel.PrintRelevant(processes)
 	return nil
 }
 
@@ -54,28 +54,27 @@ func (c *ProcessState) Stop(noWait bool) error {
 		}
 	}
 
-	log.Debugf("Stopped process '%s'", c.Process.Config.Name)
 	c.stopped = true
 	return nil
 }
 
-func (c *ProcessState) StopAsync(noWait bool, wg *sync.WaitGroup) error {
+func (c *ProcessState) StopAsync(noWait bool, wg *sync.WaitGroup, messageChannel chan *ConsoleMessage) error {
 	defer wg.Done()
 	if !c.Process.IsRunning() {
 		c.stopped = true
-		fmt.Printf(WarningColor("Process '%s' has already stopped\n", c.Process.Config.Name))
+		messageChannel <- &ConsoleMessage{fmt.Sprintf("Process %s has already stopped\n", c.Process.Config), c.Process}
 		return nil
 	}
 	for {
 		if c.IsReadyToStop() {
 			err := c.Stop(noWait)
 			if err != nil {
-				fmt.Printf(FailedColor("Failed to stop '%s' (%s)\n", c.Process.Config.Name, err))
+				messageChannel <- &ConsoleMessage{FailedColor("Failed to stop %s (%s)\n", c.Process.Config, err), c.Process}
 			} else {
-				fmt.Printf(OkColor("Stopped process '%s'\n", c.Process.Config.Name))
+				messageChannel <- &ConsoleMessage{OkColor("Stopped process %s\n", c.Process.Config), c.Process}
 			}
 			return err
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 }

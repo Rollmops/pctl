@@ -26,7 +26,7 @@ func (s *SignalStopStrategy) Stop(p *Process) error {
 	if s.SignalString != "" {
 		signal, prs := _signalNameMapping[s.SignalString]
 		if prs == false {
-			return fmt.Errorf("invalid signal name: '%s'", s.SignalString)
+			return fmt.Errorf("invalid signal name: %s", s.SignalString)
 		}
 		return p.RunningInfo.GopsutilProcess.SendSignal(signal)
 	}

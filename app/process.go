@@ -1,14 +1,9 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -20,12 +15,26 @@ type ProcessList []*Process
 type RunningInfo struct {
 	Comment         string
 	Config          ProcessConfig
-	DirtyMd5Hashes  []string
-	DirtyCommand    bool
-	Dirty           bool
 	Pid             int32
+	DirtyInfo       *DirtyInfo
 	Md5Hashes       map[string]string
 	GopsutilProcess *gopsutil.Process
+}
+
+type DirtyInfo struct {
+	DirtyCommand   bool
+	DirtyMd5Hashes []string
+}
+
+func (d *DirtyInfo) IsDirty() bool {
+	return d.DirtyCommand || len(d.DirtyMd5Hashes) > 0
+}
+
+func (r *RunningInfo) SetDirty(processConfig *ProcessConfig) error {
+	r.DirtyInfo = &DirtyInfo{
+		DirtyCommand: !CompareStringSlices(processConfig.Command, r.Config.Command),
+	}
+	return nil
 }
 
 type Process struct {
@@ -100,7 +109,7 @@ func (p *Process) Stop() error {
 func (p *Process) WaitForStop(timeout time.Duration, intervalDuration time.Duration) error {
 	attempts := timeout / intervalDuration
 	err := WaitUntilTrue(func() (bool, error) {
-		return p.IsRunning(), nil
+		return !p.IsRunning(), nil
 	}, intervalDuration, uint(attempts))
 	if err != nil {
 		return err
@@ -114,76 +123,4 @@ func (p *Process) Kill() error {
 
 func (p *Process) SyncRunningInfo() {
 	p.RunningInfo = CurrentContext.Cache.FindRunningInfoByGroupAndName(p.Config.Group, p.Config.Name)
-}
-
-func FindProcessRunningInfo(pid int32) (*RunningInfo, error) {
-	runningInfo, err := findRunningEnvironInfoFromPid(pid)
-	if err != nil {
-		return nil, err
-	}
-	if runningInfo == nil {
-		return nil, nil
-	}
-
-	gopsutilProcess, err := gopsutil.NewProcess(pid)
-	if err != nil {
-		return nil, err
-	}
-	ppid, err := gopsutilProcess.Ppid()
-	if err != nil {
-		return nil, err
-	}
-	runningInfoFromParent, err := FindProcessRunningInfo(ppid)
-	if runningInfoFromParent != nil {
-		return runningInfoFromParent, nil
-	}
-	runningInfo.GopsutilProcess = gopsutilProcess
-	//runningInfo.DirtyMd5Hashes, _ = collectDirtyHashes(&runningInfo.Config.Command, runningInfo)
-	return runningInfo, nil
-}
-
-func findRunningEnvironInfoFromPid(pid int32) (*RunningInfo, error) {
-	envString := getProcessEnvironVariable(pid, "__PCTL_INFO__")
-	if envString != "" {
-		envJson := strings.SplitN(envString, "=", 2)[1]
-		var runningInfo RunningInfo
-		err := json.Unmarshal([]byte(envJson), &runningInfo)
-		if err != nil {
-			return nil, err
-		}
-		runningInfo.Pid = pid
-		return &runningInfo, nil
-	}
-	return nil, nil
-}
-
-func getProcessEnvironVariable(pid int32, name string) string {
-	envFilePath := path.Join("/", "proc", strconv.Itoa(int(pid)), "environ")
-	envContent, err := ioutil.ReadFile(envFilePath)
-	if err == nil {
-		envStrings := strings.Split(string(envContent), "\000")
-		for _, envString := range envStrings {
-			if strings.HasPrefix(envString, name) {
-				return envString
-			}
-		}
-	}
-	return ""
-}
-
-func createRunningInfoJson(comment string, p *Process) (string, error) {
-	md5hashes, err := CreateFileHashesFromCommand(p.Config.Command)
-	if err != nil {
-		return "", err
-	}
-	runningEnvironInfo := RunningInfo{
-		Config:    *p.Config,
-		Comment:   comment,
-		Md5Hashes: *md5hashes,
-	}
-	infoStr, err := json.Marshal(runningEnvironInfo)
-	if err != nil {
-		return "", err
-	}
-	return string(infoStr), nil
 }

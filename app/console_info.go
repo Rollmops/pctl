@@ -9,9 +9,9 @@ import (
 )
 
 func init() {
-	FormatMap["default"] = &DefaultConsoleOutput{Style: table.StyleColoredBright}
+	FormatMap["default"] = &DefaultConsoleOutput{Style: table.StyleBold}
+	FormatMap["bright"] = &DefaultConsoleOutput{Style: table.StyleColoredBright}
 	FormatMap["simple"] = &DefaultConsoleOutput{Style: table.StyleDefault}
-	FormatMap["bold"] = &DefaultConsoleOutput{Style: table.StyleBold}
 	FormatMap["dark"] = &DefaultConsoleOutput{Style: table.StyleColoredDark}
 	FormatMap["black-on-green-white"] = &DefaultConsoleOutput{Style: table.StyleColoredBlackOnGreenWhite}
 	FormatMap["black-on-blue-white"] = &DefaultConsoleOutput{Style: table.StyleColoredBlackOnBlueWhite}
@@ -57,7 +57,7 @@ func (o *DefaultConsoleOutput) Write(processes ProcessList, columnIds []string) 
 			}
 			footer = append(footer, footerValue)
 		} else {
-			return fmt.Errorf("column '%s' not available", columnId)
+			return fmt.Errorf("column %s not available", columnId)
 		}
 	}
 	tw.AppendHeader(header)

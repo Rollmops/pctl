@@ -26,13 +26,13 @@ func TestFindByName(t *testing.T) {
 		},
 	}
 
-	if p := _config.FindByName("p1"); p.Command[0] != "sleep" {
+	if p := _config.FindByGroupAndName("", "p1"); p.Command[0] != "sleep" {
 		t.Fatalf("sleep != %s", p.Command[0])
 	}
-	if p := _config.FindByName("p2"); p.Command[1] != "-la" {
+	if p := _config.FindByGroupAndName("", "p2"); p.Command[1] != "-la" {
 		t.Fatalf("-la != %s", p.Command[1])
 	}
-	if p := _config.FindByName("NOT_THERE"); p != nil {
+	if p := _config.FindByGroupAndName("", "NOT_THERE"); p != nil {
 		t.Fatal("Expected process config NOT_THERE to be nil")
 	}
 
