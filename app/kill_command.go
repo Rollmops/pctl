@@ -54,9 +54,9 @@ func (c *ProcessState) KillAsync(wg *sync.WaitGroup, consoleMessageChannel *Cons
 		if c.IsReadyToStop() {
 			err := c.Process.Kill()
 			if err != nil {
-				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Failed to kill %s (%s)\n", c.Process.Config, err), c.Process}
+				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Failed to kill %s (%s)\n", c.Process.Config, err), nil}
 			} else {
-				*consoleMessageChannel <- &ConsoleMessage{OkColor("Killed process %s\n", c.Process.Config), c.Process}
+				*consoleMessageChannel <- &ConsoleMessage{OkColor("Killed process %s\n", c.Process.Config), nil}
 			}
 			return err
 		}

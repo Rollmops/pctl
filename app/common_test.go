@@ -31,28 +31,22 @@ func TestWaitUntilTrue(t *testing.T) {
 }
 
 func TestDurationToString(t *testing.T) {
-	s, err := app.DurationToString(10 * time.Millisecond)
-	assert.NoError(t, err)
+	s := app.DurationToString(10 * time.Millisecond)
 	assert.Equal(t, "0s", s)
 
-	s, err = app.DurationToString(2 * time.Second)
-	assert.NoError(t, err)
+	s = app.DurationToString(2 * time.Second)
 	assert.Equal(t, "2s", s)
 
-	s, err = app.DurationToString(1 * time.Minute)
-	assert.NoError(t, err)
+	s = app.DurationToString(1 * time.Minute)
 	assert.Equal(t, "60s", s)
 
-	s, err = app.DurationToString(121 * time.Second)
-	assert.NoError(t, err)
+	s = app.DurationToString(121 * time.Second)
 	assert.Equal(t, "2m 1s", s)
 
-	s, err = app.DurationToString(121 * time.Minute)
-	assert.NoError(t, err)
+	s = app.DurationToString(121 * time.Minute)
 	assert.Equal(t, "2h 1m", s)
 
-	s, err = app.DurationToString(25 * time.Hour)
-	assert.NoError(t, err)
+	s = app.DurationToString(25 * time.Hour)
 	assert.Equal(t, "1d 1h", s)
 }
 

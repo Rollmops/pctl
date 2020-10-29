@@ -120,7 +120,7 @@ func (c *Cache) findRunningEnvironInfoFromPid(pid int32) (*RunningInfo, error) {
 		}
 		processConfig := CurrentContext.Config.FindByGroupAndName(runningInfo.Config.Group, runningInfo.Config.Name)
 		if processConfig == nil {
-			return nil, fmt.Errorf("unable to find running process %s in config", runningInfo.Config)
+			return nil, fmt.Errorf("unable to find running process %s in config", runningInfo.Config.String())
 		}
 		runningInfo.Pid = pid
 		return &runningInfo, runningInfo.SetDirty(processConfig)

@@ -51,7 +51,7 @@ func (c *ProcessState) Start(comment string, consoleMessageChannel *ConsoleMessa
 		if err != nil {
 			return err
 		}
-		*consoleMessageChannel <- &ConsoleMessage{fmt.Sprintf("Waiting %s after starting %s\n", DurationToString(duration), c.Process.Config), c.Process}
+		*consoleMessageChannel <- &ConsoleMessage{fmt.Sprintf("Waiting %s after start of %s\n", DurationToString(duration), c.Process.Config), nil}
 		time.Sleep(duration)
 	}
 
@@ -74,9 +74,9 @@ func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string, consoleMes
 		if c.IsReadyToStart() {
 			err := c.Start(comment, consoleMessageChannel)
 			if err != nil {
-				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Failed to start %s (%s)\n", c.Process.Config, err), c.Process}
+				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Failed to start %s (%s)\n", c.Process.Config, err), nil}
 			} else {
-				*consoleMessageChannel <- &ConsoleMessage{OkColor("Started process %s\n", c.Process.Config), c.Process}
+				*consoleMessageChannel <- &ConsoleMessage{OkColor("Started process %s\n", c.Process.Config), nil}
 			}
 			return err
 		}

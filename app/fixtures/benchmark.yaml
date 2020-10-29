@@ -1,0 +1,21 @@
+processes:
+  - name: Test1
+    cmd: [ sleep, infinity ]
+  - name: Test2
+    cmd: [ sleep, infinity ]
+  - name: Test3
+    cmd: [ sleep, infinity ]
+  - name: Test4
+    cmd: [ sleep, infinity ]
+  - name: Test5
+    cmd: [ sleep, infinity ]
+  - name: Test6
+    cmd: [ sleep, infinity ]
+  - name: Test7
+    cmd: [ sleep, infinity ]
+  - name: Test8
+    cmd: [ sleep, infinity ]
+  - name: Test9
+    cmd: [ sleep, infinity ]
+  - name: Test10
+    cmd: [ sleep, infinity ]

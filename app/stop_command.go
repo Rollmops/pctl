@@ -69,9 +69,9 @@ func (c *ProcessState) StopAsync(noWait bool, wg *sync.WaitGroup, messageChannel
 		if c.IsReadyToStop() {
 			err := c.Stop(noWait)
 			if err != nil {
-				messageChannel <- &ConsoleMessage{FailedColor("Failed to stop %s (%s)\n", c.Process.Config, err), c.Process}
+				messageChannel <- &ConsoleMessage{FailedColor("Failed to stop %s (%s)\n", c.Process.Config, err), nil}
 			} else {
-				messageChannel <- &ConsoleMessage{OkColor("Stopped process %s\n", c.Process.Config), c.Process}
+				messageChannel <- &ConsoleMessage{OkColor("Stopped process %s\n", c.Process.Config), nil}
 			}
 			return err
 		}
