@@ -61,17 +61,18 @@ func (c *Config) FindByGroupAndName(group string, name string) *ProcessConfig {
 	return nil
 }
 
-func (c *Config) FindByGroupNameSpecifier(groupNameSpecifier string) (*ProcessConfig, error) {
+func (c *Config) FindByGroupNameSpecifier(groupNameSpecifier string) ([]*ProcessConfig, error) {
 	specifier, err := NewGroupNameSpecifier(groupNameSpecifier)
 	if err != nil {
 		return nil, err
 	}
+	var processConfigs []*ProcessConfig
 	for _, p := range c.ProcessConfigs {
 		if specifier.IsMatchingGroupAndName(p.Group, p.Name) {
-			return p, nil
+			processConfigs = append(processConfigs, p)
 		}
 	}
-	return nil, nil
+	return processConfigs, nil
 }
 
 func (c *Config) CollectProcessesByNameSpecifiers(nameSpecifiers []string, filters []string, allIfNoSpecifiers bool) (ProcessList, error) {
@@ -129,15 +130,17 @@ func getFilteredProcesses(processes ProcessList, filterPatterns []string) ([]*Pr
 func (c *Config) FillDependsOnInverse() error {
 	for _, pConfig := range c.ProcessConfigs {
 		for _, dependsOn := range pConfig.DependsOn {
-			dConfig, err := c.FindByGroupNameSpecifier(dependsOn)
+			dependencyConfigs, err := c.FindByGroupNameSpecifier(dependsOn)
 			if err != nil {
 				return err
 			}
-			if dConfig == nil {
+			if dependencyConfigs == nil {
 				return fmt.Errorf("unable to find process config matching %s", dependsOn)
 			}
-			if !_isInList(dConfig.DependsOnInverse, pConfig.Name) {
-				dConfig.DependsOnInverse = append(dConfig.DependsOnInverse, pConfig.Name)
+			for _, dependencyConfig := range dependencyConfigs {
+				if !_isInList(dependencyConfig.DependsOnInverse, pConfig.Name) {
+					dependencyConfig.DependsOnInverse = append(dependencyConfig.DependsOnInverse, pConfig.Name)
+				}
 			}
 		}
 	}

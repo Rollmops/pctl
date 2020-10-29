@@ -48,26 +48,29 @@ func NewProcessStateMap(processes ProcessList, dependencyGetter func(*Process) [
 }
 
 func addToProcessStateMap(p *Process, processStateMap map[string]*ProcessState, dependencyGetter func(*Process) []string) (map[string]*ProcessState, error) {
-	if processStateMap[p.Config.Name] == nil {
-		processStateMap[p.Config.Name] = &ProcessState{
+	if processStateMap[p.Config.String()] == nil {
+		processStateMap[p.Config.String()] = &ProcessState{
 			Process: p,
 			started: false,
 		}
 	}
 	for _, d := range dependencyGetter(p) {
-		processConfig, err := CurrentContext.Config.FindByGroupNameSpecifier(d)
+		dependencyConfigs, err := CurrentContext.Config.FindByGroupNameSpecifier(d)
 		if err != nil {
 			return nil, err
 		}
-		depProcess, err := CurrentContext.GetProcessByConfig(processConfig)
-		if err != nil {
-			return nil, err
+		for _, dependencyConfig := range dependencyConfigs {
+			dependencyProcess, err := CurrentContext.GetProcessByConfig(dependencyConfig)
+			if err != nil {
+				return nil, err
+			}
+			processStateMap, err = addToProcessStateMap(dependencyProcess, processStateMap, dependencyGetter)
+			if err != nil {
+				return nil, err
+			}
+			processStateMap[p.Config.String()].AddDependency(processStateMap[dependencyConfig.String()])
 		}
-		processStateMap, err = addToProcessStateMap(depProcess, processStateMap, dependencyGetter)
-		if err != nil {
-			return nil, err
-		}
-		processStateMap[p.Config.Name].AddDependency(processStateMap[d])
+
 	}
 	return processStateMap, nil
 }
