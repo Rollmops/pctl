@@ -8,7 +8,6 @@ import (
 type PropertyComparator interface {
 	Equal(interface{}, interface{}) (bool, error)
 	Greater(interface{}, interface{}) (bool, error)
-	GreaterEqual(interface{}, interface{}) (bool, error)
 }
 
 type StringPropertyComparator struct{}
@@ -22,9 +21,5 @@ func (c *StringPropertyComparator) Equal(value1 interface{}, value2 interface{})
 }
 
 func (c *StringPropertyComparator) Greater(_ interface{}, _ interface{}) (bool, error) {
-	return false, fmt.Errorf("operator not supported")
-}
-
-func (c *StringPropertyComparator) GreaterEqual(_ interface{}, _ interface{}) (bool, error) {
 	return false, fmt.Errorf("operator not supported")
 }
