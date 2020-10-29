@@ -78,13 +78,13 @@ func (p *Process) Start(comment string) error {
 	return cmd.Start()
 }
 
-func (p *Process) WaitForReady() error {
+func (p *Process) WaitForReady() (bool, error) {
 	readinessProbe := ReadinessProbes[p.Config.ReadinessProbe]
-	// TODO maxWaitTime and IntervalDuration from config
-	maxWaitTime := 5 * time.Second
+	// TODO timeout and IntervalDuration from config
+	timeout := 5 * time.Second
 	intervalDuration := 100 * time.Millisecond
-	attempts := maxWaitTime / intervalDuration
-	err := WaitUntilTrue(func() (bool, error) {
+	attempts := timeout / intervalDuration
+	ready, err := WaitUntilTrue(func() (bool, error) {
 		running, err := readinessProbe.Probe(p)
 		if err != nil {
 			return false, err
@@ -92,9 +92,9 @@ func (p *Process) WaitForReady() error {
 		return running, nil
 	}, intervalDuration, uint(attempts))
 	if err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return ready, nil
 }
 
 func (p *Process) Stop() error {
@@ -106,15 +106,15 @@ func (p *Process) Stop() error {
 	return nil
 }
 
-func (p *Process) WaitForStop(timeout time.Duration, intervalDuration time.Duration) error {
+func (p *Process) WaitForStop(timeout time.Duration, intervalDuration time.Duration) (bool, error) {
 	attempts := timeout / intervalDuration
-	err := WaitUntilTrue(func() (bool, error) {
+	stopped, err := WaitUntilTrue(func() (bool, error) {
 		return !p.IsRunning(), nil
 	}, intervalDuration, uint(attempts))
 	if err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return stopped, nil
 }
 
 func (p *Process) Kill() error {

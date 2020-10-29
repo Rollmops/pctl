@@ -16,17 +16,17 @@ type Cache struct {
 	runningInfoList []*RunningInfo
 }
 
-type refreshChannelType struct {
+type RefreshResult struct {
 	runningInfo *RunningInfo
 	err         error
 }
 
-func (c *Cache) refreshForPid(pid int32, channel chan *refreshChannelType, wg *sync.WaitGroup) {
+type RefreshChannelType chan *RefreshResult
+
+func (c *Cache) refreshForPid(pid int32, channel RefreshChannelType, wg *sync.WaitGroup) {
 	defer wg.Done()
-	runningInfo, _ := c.FindProcessRunningInfo(pid)
-	if runningInfo != nil {
-		channel <- &refreshChannelType{runningInfo, nil}
-	}
+	runningInfo, err := c.FindProcessRunningInfo(pid)
+	channel <- &RefreshResult{runningInfo, err}
 }
 
 func (c *Cache) Refresh() error {
@@ -37,7 +37,7 @@ func (c *Cache) Refresh() error {
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(len(processIds))
-	channel := make(chan *refreshChannelType)
+	channel := make(chan *RefreshResult)
 	go func() {
 		wg.Wait()
 		close(channel)
@@ -47,12 +47,14 @@ func (c *Cache) Refresh() error {
 	}
 	for refreshChannelReturn := range channel {
 		if refreshChannelReturn.err != nil {
-			return err
+			err = refreshChannelReturn.err
 		}
-		c.runningInfoList = append(c.runningInfoList, refreshChannelReturn.runningInfo)
+		if refreshChannelReturn.runningInfo != nil {
+			c.runningInfoList = append(c.runningInfoList, refreshChannelReturn.runningInfo)
+		}
 	}
 
-	return nil
+	return err
 }
 
 func (c *Cache) FindRunningInfoByGroupAndName(group string, name string) *RunningInfo {
@@ -98,7 +100,10 @@ func (c *Cache) FindProcessRunningInfo(pid int32) (*RunningInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	runningInfoFromParent, _ := c.FindProcessRunningInfo(ppid)
+	runningInfoFromParent, err := c.FindProcessRunningInfo(ppid)
+	if err != nil {
+		return nil, err
+	}
 	if runningInfoFromParent != nil {
 		return runningInfoFromParent, nil
 	}

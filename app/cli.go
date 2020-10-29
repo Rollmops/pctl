@@ -38,6 +38,18 @@ func CreateCliApp() (*cli.App, error) {
 		Value:   false,
 		Usage:   "Filter only dirty processes (same as '--filter state.dirty==true')",
 	}
+	killFlag := &cli.BoolFlag{
+		Name:    "kill",
+		Value:   false,
+		Usage:   "kill processes if unable to stop",
+		EnvVars: []string{"PCTL_STOP_KILL"},
+	}
+	nowaitFlag := &cli.BoolFlag{
+		Name:    "nowait",
+		Value:   false,
+		Usage:   "skip waiting until process stopped",
+		EnvVars: []string{"PCTL_STOP_NO_WAIT"},
+	}
 
 	return &cli.App{
 		Before: func(c *cli.Context) error {
@@ -177,6 +189,7 @@ func CreateCliApp() (*cli.App, error) {
 						Name:  "comment",
 						Usage: "add comment",
 					},
+					killFlag,
 					filtersFlag,
 					runningFlag,
 					stoppedFlag,
@@ -188,7 +201,8 @@ func CreateCliApp() (*cli.App, error) {
 					if c.NArg() == 0 && len(filters) == 0 {
 						return fmt.Errorf("missing process names or filters")
 					}
-					return RestartCommand(c.Args().Slice(), filters, c.String("comment"))
+					kill := c.Bool("kill")
+					return RestartCommand(c.Args().Slice(), filters, c.String("comment"), kill)
 				},
 			},
 			{
@@ -196,12 +210,8 @@ func CreateCliApp() (*cli.App, error) {
 				Usage:     "stop process(es)",
 				ArgsUsage: UsageNameSpecifiers,
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    "nowait",
-						Value:   false,
-						Usage:   "skip waiting until process stopped",
-						EnvVars: []string{"PCTL_STOP_NO_WAIT"},
-					},
+					nowaitFlag,
+					killFlag,
 					filtersFlag,
 					runningFlag,
 					stoppedFlag,
@@ -213,7 +223,12 @@ func CreateCliApp() (*cli.App, error) {
 					if c.NArg() == 0 && len(filters) == 0 {
 						return fmt.Errorf("missing process names or filters")
 					}
-					return StopCommand(c.Args().Slice(), filters, c.Bool("nowait"))
+					noWait := c.Bool("nowait")
+					kill := c.Bool("kill")
+					if noWait && kill {
+						return fmt.Errorf("unable to combine --nowait and --kill")
+					}
+					return StopCommand(c.Args().Slice(), filters, noWait, kill)
 				},
 			},
 			{

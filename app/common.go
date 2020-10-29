@@ -14,23 +14,22 @@ import (
 	"time"
 )
 
-func WaitUntilTrue(testFunction func() (bool, error), interval time.Duration, attempts uint) error {
+func WaitUntilTrue(testFunction func() (bool, error), interval time.Duration, attempts uint) (bool, error) {
 	var _attempt uint = 0
 	for {
 		result, err := testFunction()
 		if err != nil {
-			return err
+			return false, err
 		}
 		if result == true {
-			break
+			return true, nil
 		}
 		_attempt++
 		if _attempt >= attempts {
-			return fmt.Errorf("max attempts reached")
+			return false, nil
 		}
 		time.Sleep(interval)
 	}
-	return nil
 }
 
 func CompareStringSlices(slice1 []string, slice2 []string) bool {
