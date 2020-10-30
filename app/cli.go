@@ -306,13 +306,13 @@ func CreateCliApp() (*cli.App, error) {
 
 func addShortcutFilters(c *cli.Context, filters []string) []string {
 	if c.Bool("running") {
-		filters = append(filters, "state.running==true")
+		filters = append(filters, "running==true")
 	}
 	if c.Bool("stopped") {
-		filters = append(filters, "state.stopped==true")
+		filters = append(filters, "stopped==true")
 	}
 	if c.Bool("dirty") {
-		filters = append(filters, "state.dirty==true")
+		filters = append(filters, "dirty==true")
 	}
 	return filters
 }

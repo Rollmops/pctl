@@ -61,11 +61,12 @@ func (c *ProcessState) Stop(noWait bool, kill bool, consoleMessageChannel *Conso
 					return err
 				}
 				c.stopped = true
+			} else {
+				err := fmt.Errorf("unable to stop %s", c.Process.Config)
+				c.stopErr = &err
+				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Unable to stop %s\n", c.Process.Config), nil}
+				return nil
 			}
-			err := fmt.Errorf("unable to stop %s", c.Process.Config)
-			c.stopErr = &err
-			*consoleMessageChannel <- &ConsoleMessage{FailedColor("Unable to stop %s\n", c.Process.Config), nil}
-			return nil
 		}
 	}
 	c.stopped = true

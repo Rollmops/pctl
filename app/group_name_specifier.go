@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/minio/minio/pkg/wildcard"
 	"regexp"
+	"strings"
 )
 
 var groupNameSpecifierPatternRegex *regexp.Regexp
@@ -36,11 +37,11 @@ func NewGroupNameSpecifier(specifier string) (*GroupNameSpecifier, error) {
 	}
 
 	return &GroupNameSpecifier{
-		group: group,
-		name:  name,
+		group: strings.ToLower(group),
+		name:  strings.ToLower(name),
 	}, nil
 }
 
 func (s *GroupNameSpecifier) IsMatchingGroupAndName(group string, name string) bool {
-	return wildcard.Match(s.group, group) && wildcard.Match(s.name, name)
+	return wildcard.Match(s.group, strings.ToLower(group)) && wildcard.Match(s.name, strings.ToLower(name))
 }

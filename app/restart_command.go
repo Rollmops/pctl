@@ -12,5 +12,7 @@ func RestartCommand(names []string, filters []string, comment string, kill bool)
 	if err != nil {
 		return err
 	}
+
+	// TODO remove filters that may change during restart (e.g. dirty)
 	return StartCommand(names, filters, comment)
 }

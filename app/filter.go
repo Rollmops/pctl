@@ -9,7 +9,7 @@ import (
 var filterPatternRegex *regexp.Regexp
 
 func init() {
-	filterPatternRegex = regexp.MustCompile(`([.a-zA-Z0-9_-]+)([!=<>]+)([.a-zA-Z0-9_-]+)`)
+	filterPatternRegex = regexp.MustCompile(`([.a-zA-Z0-9_-]+)([!=<>]+)([*?.a-zA-Z0-9_-]+)`)
 }
 
 type Filter struct {
@@ -38,14 +38,10 @@ func (f *Filter) IsMatchingProcess(process *Process) (bool, error) {
 	if strings.HasPrefix(f.field, "metadata.") {
 		fieldValue = process.Config.Metadata[strings.Split(f.field, ".")[1]]
 		comparator = &StringPropertyComparator{}
-	} else if f.field == "group" {
-		fieldValue = process.Config.Group
-		comparator = &StringPropertyComparator{}
-	} else if strings.HasPrefix(f.field, "state.") || strings.HasPrefix(f.field, "property.") {
-		propertyId := strings.Split(f.field, ".")[1]
-		property := PropertyMap[propertyId]
+	} else {
+		property := PropertyMap[f.field]
 		if property == nil {
-			return false, fmt.Errorf("property/state %s not available", propertyId)
+			return false, fmt.Errorf("invalid filter field: %s", f.field)
 		}
 		var err error
 		fieldValue, err = property.Value(process, false)
@@ -53,8 +49,6 @@ func (f *Filter) IsMatchingProcess(process *Process) (bool, error) {
 			return false, err
 		}
 		comparator = property.GetComparator()
-	} else {
-		return false, fmt.Errorf("invalid filter field: %s", f.field)
 	}
 
 	switch f.operator {

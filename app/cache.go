@@ -37,15 +37,15 @@ func (c *Cache) Refresh() error {
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(len(processIds))
-	channel := make(chan *RefreshResult)
+	refreshResultChannel := make(chan *RefreshResult, len(CurrentContext.Config.ProcessConfigs))
 	go func() {
 		wg.Wait()
-		close(channel)
+		close(refreshResultChannel)
 	}()
 	for _, pid := range processIds {
-		go c.refreshForPid(pid, channel, &wg)
+		go c.refreshForPid(pid, refreshResultChannel, &wg)
 	}
-	for refreshChannelReturn := range channel {
+	for refreshChannelReturn := range refreshResultChannel {
 		if refreshChannelReturn.err != nil {
 			err = refreshChannelReturn.err
 		}
@@ -94,11 +94,12 @@ func (c *Cache) FindProcessRunningInfo(pid int32) (*RunningInfo, error) {
 
 	gopsutilProcess, err := gopsutil.NewProcess(pid)
 	if err != nil {
-		return nil, err
+		// do not return the error here since the pid might have been gone already
+		return nil, nil
 	}
-	ppid, err := gopsutilProcess.Ppid()
-	if err != nil {
-		return nil, err
+	ppid, _ := gopsutilProcess.Ppid()
+	if ppid == -1 {
+		return runningInfo, nil
 	}
 	runningInfoFromParent, err := c.FindProcessRunningInfo(ppid)
 	if err != nil {
@@ -109,8 +110,7 @@ func (c *Cache) FindProcessRunningInfo(pid int32) (*RunningInfo, error) {
 	}
 
 	runningInfo.GopsutilProcess = gopsutilProcess
-	// TODO do this in agent
-	//runningInfo.DirtyMd5Hashes, _ = collectDirtyHashes(&runningInfo.Config.Command, runningInfo)
+	runningInfo.DirtyInfo.DirtyMd5Hashes, _ = collectDirtyHashes(&runningInfo.Config.Command, runningInfo)
 	return runningInfo, nil
 }
 
@@ -125,7 +125,7 @@ func (c *Cache) findRunningEnvironInfoFromPid(pid int32) (*RunningInfo, error) {
 		}
 		processConfig := CurrentContext.Config.FindByGroupAndName(runningInfo.Config.Group, runningInfo.Config.Name)
 		if processConfig == nil {
-			return nil, fmt.Errorf("unable to find running process %s in config", runningInfo.Config.String())
+			return nil, fmt.Errorf("unable to find running process %s with PID %d in config", runningInfo.Config.String(), pid)
 		}
 		runningInfo.Pid = pid
 		return &runningInfo, runningInfo.SetDirty(processConfig)

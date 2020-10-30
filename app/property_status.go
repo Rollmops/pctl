@@ -1,6 +1,9 @@
 package app
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type StatusProperty struct{}
 
@@ -15,19 +18,31 @@ func (*StatusProperty) Name() string {
 }
 
 func (*StatusProperty) Value(p *Process, formatted bool) (string, error) {
+	var status []string
 	if p.IsRunning() {
 		if formatted {
-			return OkColor("Running"), nil
+			status = append(status, OkColor("Running"))
 		} else {
-			return "Running", nil
+			status = append(status, "Running")
 		}
 	} else {
 		if formatted {
-			return FailedColor("Stopped"), nil
+			status = append(status, FailedColor("Stopped"))
 		} else {
-			return "Stopped", nil
+			status = append(status, "Stopped")
 		}
 	}
+	if p.RunningInfo != nil {
+		if p.RunningInfo.DirtyInfo.IsDirty() {
+			if formatted {
+				status = append(status, WarningColor("Dirty"))
+			} else {
+				status = append(status, "Dirty")
+			}
+
+		}
+	}
+	return strings.Join(status, " | "), nil
 }
 
 func (*StatusProperty) FormattedSumValue(processList ProcessList) (string, error) {
