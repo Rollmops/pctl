@@ -22,21 +22,21 @@ func CreateCliApp() (*cli.App, error) {
 		Name:    "running",
 		Aliases: []string{"r"},
 		Value:   false,
-		Usage:   "Filter only running processes (same as '--filter state.running==true')",
+		Usage:   "Filter only running processes (same as '--filter running==true')",
 	}
 
 	stoppedFlag := &cli.BoolFlag{
 		Name:    "stopped",
 		Aliases: []string{"s"},
 		Value:   false,
-		Usage:   "Filter only stopped processes (same as '--filter state.stopped==true')",
+		Usage:   "Filter only stopped processes (same as '--filter stopped==true')",
 	}
 
 	dirtyFlag := &cli.BoolFlag{
 		Name:    "dirty",
 		Aliases: []string{"d"},
 		Value:   false,
-		Usage:   "Filter only dirty processes (same as '--filter state.dirty==true')",
+		Usage:   "Filter only dirty processes (same as '--filter dirty==true')",
 	}
 	killFlag := &cli.BoolFlag{
 		Name:    "kill",
