@@ -75,7 +75,7 @@ func (c *Config) FindByGroupNameSpecifier(groupNameSpecifier string) ([]*Process
 	return processConfigs, nil
 }
 
-func (c *Config) CollectProcessesByNameSpecifiers(nameSpecifiers []string, filters []string, allIfNoSpecifiers bool) (ProcessList, error) {
+func (c *Config) CollectProcessesByNameSpecifiers(nameSpecifiers []string, filters Filters, allIfNoSpecifiers bool) (ProcessList, error) {
 	logrus.Tracef("Collecting processes for name specifiers: %v", nameSpecifiers)
 	var returnProcesses ProcessList
 	if len(nameSpecifiers) == 0 && allIfNoSpecifiers {
@@ -100,18 +100,14 @@ func (c *Config) CollectProcessesByNameSpecifiers(nameSpecifiers []string, filte
 	return getFilteredProcesses(returnProcesses, filters)
 }
 
-func getFilteredProcesses(processes ProcessList, filterPatterns []string) ([]*Process, error) {
+func getFilteredProcesses(processes ProcessList, filters Filters) ([]*Process, error) {
 	err := processes.SyncRunningInfo()
 	if err != nil {
 		return nil, err
 	}
-	if len(filterPatterns) > 0 {
+	if len(filters) > 0 {
 		var filteredProcesses ProcessList
-		for _, filterPattern := range filterPatterns {
-			filter, err := NewFilter(filterPattern)
-			if err != nil {
-				return nil, err
-			}
+		for _, filter := range filters {
 			for _, p := range processes {
 				isRelevant, err := filter.IsMatchingProcess(p)
 				if err != nil {

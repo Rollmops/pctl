@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func StartCommand(names []string, filters []string, comment string) error {
+func StartCommand(names []string, filters Filters, comment string) error {
 	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, len(filters) > 0)
 	if err != nil {
 		return err
@@ -14,7 +14,11 @@ func StartCommand(names []string, filters []string, comment string) error {
 	if len(processes) == 0 {
 		return fmt.Errorf(MsgNoMatchingProcess)
 	}
+	return StartProcesses(processes, comment)
 
+}
+
+func StartProcesses(processes []*Process, comment string) error {
 	processStateMap, err := NewProcessStateMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOn
@@ -33,7 +37,6 @@ func StartCommand(names []string, filters []string, comment string) error {
 	}()
 
 	for _, processState := range *processStateMap {
-		// TODO handle error
 		go processState.StartAsync(&wg, comment, &consoleMessageChannel)
 	}
 	consoleMessageChannel.PrintRelevant(processes)

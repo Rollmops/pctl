@@ -1,9 +1,15 @@
 package app
 
-import "fmt"
+import (
+	"fmt"
+)
 
-func RestartCommand(names []string, filters []string, comment string, kill bool) error {
-	err := StopCommand(names, filters, false, kill)
+func RestartCommand(names []string, filters Filters, comment string, kill bool) error {
+	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, len(filters) > 0)
+	if err != nil {
+		return err
+	}
+	err = StopProcesses(processes, false, kill)
 	if err != nil {
 		return err
 	}
@@ -13,6 +19,5 @@ func RestartCommand(names []string, filters []string, comment string, kill bool)
 		return err
 	}
 
-	// TODO remove filters that may change during restart (e.g. dirty)
-	return StartCommand(names, filters, comment)
+	return StartProcesses(processes, comment)
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func StopCommand(names []string, filters []string, noWait bool, kill bool) error {
+func StopCommand(names []string, filters Filters, noWait bool, kill bool) error {
 	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, len(filters) > 0)
 	if err != nil {
 		return err
@@ -15,6 +15,10 @@ func StopCommand(names []string, filters []string, noWait bool, kill bool) error
 		return fmt.Errorf(MsgNoMatchingProcess)
 	}
 
+	return StopProcesses(processes, noWait, kill)
+}
+
+func StopProcesses(processes []*Process, noWait bool, kill bool) error {
 	processStateMap, err := NewProcessStateMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOnInverse

@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func InfoCommand(names []string, format string, filters []string, columns []string) error {
+func InfoCommand(names []string, format string, filters Filters, columns []string) error {
 	o := FormatMap[format]
 	if o == nil {
 		return fmt.Errorf("unknown format: %s", format)

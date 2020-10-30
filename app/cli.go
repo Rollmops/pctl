@@ -172,8 +172,10 @@ func CreateCliApp() (*cli.App, error) {
 					dirtyFlag,
 				},
 				Action: func(c *cli.Context) error {
-					filters := c.StringSlice("filter")
-					filters = addShortcutFilters(c, filters)
+					filters, err := createFilters(c)
+					if err != nil {
+						return err
+					}
 					if c.NArg() == 0 && len(filters) == 0 {
 						return fmt.Errorf("missing process names or filters")
 					}
@@ -196,8 +198,10 @@ func CreateCliApp() (*cli.App, error) {
 					dirtyFlag,
 				},
 				Action: func(c *cli.Context) error {
-					filters := c.StringSlice("filter")
-					filters = addShortcutFilters(c, filters)
+					filters, err := createFilters(c)
+					if err != nil {
+						return err
+					}
 					if c.NArg() == 0 && len(filters) == 0 {
 						return fmt.Errorf("missing process names or filters")
 					}
@@ -218,8 +222,10 @@ func CreateCliApp() (*cli.App, error) {
 					dirtyFlag,
 				},
 				Action: func(c *cli.Context) error {
-					filters := c.StringSlice("filter")
-					filters = addShortcutFilters(c, filters)
+					filters, err := createFilters(c)
+					if err != nil {
+						return err
+					}
 					if c.NArg() == 0 && len(filters) == 0 {
 						return fmt.Errorf("missing process names or filters")
 					}
@@ -242,8 +248,10 @@ func CreateCliApp() (*cli.App, error) {
 					dirtyFlag,
 				},
 				Action: func(c *cli.Context) error {
-					filters := c.StringSlice("filter")
-					filters = addShortcutFilters(c, filters)
+					filters, err := createFilters(c)
+					if err != nil {
+						return err
+					}
 					if c.NArg() == 0 && len(filters) == 0 {
 						return fmt.Errorf("missing process names or filters")
 					}
@@ -288,8 +296,10 @@ func CreateCliApp() (*cli.App, error) {
 					dirtyFlag,
 				},
 				Action: func(c *cli.Context) error {
-					filters := c.StringSlice("filter")
-					filters = addShortcutFilters(c, filters)
+					filters, err := createFilters(c)
+					if err != nil {
+						return err
+					}
 					format := c.String("format")
 					if format == "" {
 						format = "default"
@@ -304,15 +314,36 @@ func CreateCliApp() (*cli.App, error) {
 	}, nil
 }
 
-func addShortcutFilters(c *cli.Context, filters []string) []string {
+func createFilters(c *cli.Context) (Filters, error) {
+	filters, err := NewFilters(c.StringSlice("filter"))
+	if err != nil {
+		return nil, err
+	}
+	filters = addShortcutFilters(c, filters)
+	return filters, nil
+}
+
+func addShortcutFilters(c *cli.Context, filters Filters) Filters {
 	if c.Bool("running") {
-		filters = append(filters, "running==true")
+		filters = append(filters, &Filter{
+			field:    "running",
+			operator: "=",
+			value:    "true",
+		})
 	}
 	if c.Bool("stopped") {
-		filters = append(filters, "stopped==true")
+		filters = append(filters, &Filter{
+			field:    "stopped",
+			operator: "=",
+			value:    "true",
+		})
 	}
 	if c.Bool("dirty") {
-		filters = append(filters, "dirty==true")
+		filters = append(filters, &Filter{
+			field:    "dirty",
+			operator: "=",
+			value:    "true",
+		})
 	}
 	return filters
 }

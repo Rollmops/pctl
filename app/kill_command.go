@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func KillCommand(names []string, filters []string) error {
+func KillCommand(names []string, filters Filters) error {
 	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, len(filters) > 0)
 	if err != nil {
 		return err

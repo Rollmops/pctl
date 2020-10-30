@@ -18,6 +18,20 @@ type Filter struct {
 	value    string
 }
 
+type Filters []*Filter
+
+func NewFilters(patterns []string) (Filters, error) {
+	var returnFilters Filters
+	for _, pattern := range patterns {
+		filter, err := NewFilter(pattern)
+		if err != nil {
+			return nil, err
+		}
+		returnFilters = append(returnFilters, filter)
+	}
+	return returnFilters, nil
+}
+
 func NewFilter(pattern string) (*Filter, error) {
 	match := filterPatternRegex.FindStringSubmatch(pattern)
 	if len(match) != 4 {
