@@ -63,7 +63,7 @@ func CreateCliApp() (*cli.App, error) {
 			logrus.SetLevel(level)
 			logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true, DisableColors: noColor})
 			CurrentContext.OutputWriter = os.Stdout
-			return nil
+			return CurrentContext.Initialize()
 
 		},
 		Name:  "pctl",

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Cache struct {
@@ -30,11 +31,14 @@ func (c *Cache) refreshForPid(pid int32, channel RefreshChannelType, wg *sync.Wa
 }
 
 func (c *Cache) Refresh() error {
+	logrus.Debug("Start refreshing cache")
+	start := time.Now()
 	c.runningInfoList = make([]*RunningInfo, 0)
 	processIds, err := gopsutil.Pids()
 	if err != nil {
 		return err
 	}
+	logrus.Tracef("Found %d running PIDs", len(processIds))
 	wg := sync.WaitGroup{}
 	wg.Add(len(processIds))
 	refreshResultChannel := make(chan *RefreshResult, len(CurrentContext.Config.ProcessConfigs))
@@ -53,7 +57,8 @@ func (c *Cache) Refresh() error {
 			c.runningInfoList = append(c.runningInfoList, refreshChannelReturn.runningInfo)
 		}
 	}
-
+	elapsed := time.Since(start)
+	logrus.Debugf("Refreshing cache took %s", elapsed)
 	return err
 }
 

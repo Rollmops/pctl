@@ -32,6 +32,7 @@ func (c *Context) GetProcessByConfig(processConfig *ProcessConfig) (*Process, er
 }
 
 func (c *Context) Initialize() error {
+	logrus.Debug("Start initializing app context")
 	err := c.LoadConfig()
 	if err != nil {
 		return err
@@ -78,10 +79,5 @@ func Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	err = CurrentContext.Initialize()
-	if err != nil {
-		return err
-	}
-	logrus.Debug("Initialization finished")
 	return pctlApp.Run(args)
 }
