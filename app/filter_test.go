@@ -6,10 +6,9 @@ import (
 )
 
 func TestIsRelevantForFilterStrings(t *testing.T) {
-	p := &ProcessConfig{
-		Metadata: map[string]string{
-			"group": "km",
-		},
+	p := &ProcessConfig{}
+	p.Metadata = map[string]string{
+		"group": "km",
 	}
 	assert.True(t, isRelevantForFilter(t, p, "metadata.group=km"))
 	assert.True(t, isRelevantForFilter(t, p, "metadata.group==km"))

@@ -61,10 +61,10 @@ func (p *Process) IsRunning() bool {
 	return false
 }
 
-func (p *Process) Start(comment string) error {
+func (p *Process) Start(comment string) (int32, error) {
 	runningInfoStr, err := createRunningInfoJson(comment, p)
 	if err != nil {
-		return err
+		return -1, err
 	}
 	infoEnv := fmt.Sprintf("__PCTL_INFO__=%s", runningInfoStr)
 
@@ -75,26 +75,40 @@ func (p *Process) Start(comment string) error {
 	for key, value := range p.Config.Env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
-	return cmd.Start()
+	err = cmd.Start()
+	return int32(cmd.Process.Pid), err
 }
 
-func (p *Process) WaitForReady() (bool, error) {
-	readinessProbe := ReadinessProbes[p.Config.ReadinessProbe]
-	// TODO timeout and IntervalDuration from config
-	timeout := 5 * time.Second
-	intervalDuration := 100 * time.Millisecond
-	attempts := timeout / intervalDuration
-	ready, err := WaitUntilTrue(func() (bool, error) {
-		running, err := readinessProbe.Probe(p)
+func (p *Process) WaitForReady(pid int32) (bool, error) {
+	readinessProbe := p.Config.ReadinessProbe
+	if readinessProbe != nil {
+		if p.RunningInfo == nil {
+			p.RunningInfo = &RunningInfo{Pid: pid}
+		} else {
+			p.RunningInfo.Pid = pid
+		}
+		timeout, err := readinessProbe.GetTimeout()
 		if err != nil {
 			return false, err
 		}
-		return running, nil
-	}, intervalDuration, uint(attempts))
-	if err != nil {
-		return false, err
+		intervalDuration, err := readinessProbe.GetInterval()
+		if err != nil {
+			return false, err
+		}
+		attempts := timeout / intervalDuration
+		ready, err := WaitUntilTrue(func() (bool, error) {
+			running, err := readinessProbe.Probe(p)
+			if err != nil {
+				return false, err
+			}
+			return running, nil
+		}, intervalDuration, uint(attempts))
+		if err != nil {
+			return false, err
+		}
+		return ready, nil
 	}
-	return ready, nil
+	return true, nil
 }
 
 func (p *Process) Stop() error {

@@ -8,16 +8,20 @@ type ProcessState struct {
 	started      bool
 	stopped      bool
 	stopErr      *error
+	startErr     *error
 }
 
 // Is ready to start, when all dependencies are started
-func (c *ProcessState) IsReadyToStart() bool {
+func (c *ProcessState) IsReadyToStart() (bool, error) {
 	for _, d := range c.dependencies {
+		if d.startErr != nil {
+			return false, *d.startErr
+		}
 		if !d.started {
-			return false
+			return false, nil
 		}
 	}
-	return true
+	return true, nil
 }
 
 func (c *ProcessState) IsReadyToStop() (bool, error) {

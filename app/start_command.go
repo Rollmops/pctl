@@ -44,22 +44,25 @@ func StartProcesses(processes []*Process, comment string) error {
 }
 
 func (c *ProcessState) Start(comment string, consoleMessageChannel *ConsoleMessageChannel) error {
-	err := c.Process.Start(comment)
+	pid, err := c.Process.Start(comment)
 	if err != nil {
+		c.startErr = &err
 		return err
 	}
 
 	if c.Process.Config.WaitAfterStart != "" {
 		duration, err := time.ParseDuration(c.Process.Config.WaitAfterStart)
 		if err != nil {
+			c.startErr = &err
 			return err
 		}
 		*consoleMessageChannel <- &ConsoleMessage{fmt.Sprintf("Waiting %s after start of %s\n", DurationToString(duration), c.Process.Config), nil}
 		time.Sleep(duration)
 	}
 
-	ready, err := c.Process.WaitForReady()
+	ready, err := c.Process.WaitForReady(pid)
 	if err != nil {
+		c.startErr = &err
 		return err
 	}
 	if !ready {
@@ -78,7 +81,12 @@ func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string, consoleMes
 		return nil
 	}
 	for {
-		if c.IsReadyToStart() {
+		started, err := c.IsReadyToStart()
+		if err != nil {
+			c.startErr = &err
+			return err
+		}
+		if started {
 			err := c.Start(comment, consoleMessageChannel)
 			if err != nil {
 				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Error during starting %s (%s)\n", c.Process.Config, err), nil}

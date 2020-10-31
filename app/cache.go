@@ -26,7 +26,7 @@ type RefreshChannelType chan *RefreshResult
 
 func (c *Cache) refreshForPid(pid int32, channel RefreshChannelType, wg *sync.WaitGroup) {
 	defer wg.Done()
-	runningInfo, err := c.FindProcessRunningInfo(pid)
+	runningInfo, err := FindTopProcessRunningInfo(pid)
 	channel <- &RefreshResult{runningInfo, err}
 }
 
@@ -88,8 +88,8 @@ func collectDirtyHashes(command *[]string, runningInfo *RunningInfo) ([]string, 
 	return returnDirtyHashes, nil
 }
 
-func (c *Cache) FindProcessRunningInfo(pid int32) (*RunningInfo, error) {
-	runningInfo, err := c.findRunningEnvironInfoFromPid(pid)
+func FindTopProcessRunningInfo(pid int32) (*RunningInfo, error) {
+	runningInfo, err := FindRunningEnvironInfoFromPid(pid)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (c *Cache) FindProcessRunningInfo(pid int32) (*RunningInfo, error) {
 	if ppid == -1 {
 		return runningInfo, nil
 	}
-	runningInfoFromParent, err := c.FindProcessRunningInfo(ppid)
+	runningInfoFromParent, err := FindTopProcessRunningInfo(ppid)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (c *Cache) FindProcessRunningInfo(pid int32) (*RunningInfo, error) {
 	return runningInfo, nil
 }
 
-func (c *Cache) findRunningEnvironInfoFromPid(pid int32) (*RunningInfo, error) {
+func FindRunningEnvironInfoFromPid(pid int32) (*RunningInfo, error) {
 	envString := getProcessEnvironVariable(pid, "__PCTL_INFO__")
 	if envString != "" {
 		envJson := strings.SplitN(envString, "=", 2)[1]

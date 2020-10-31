@@ -16,12 +16,16 @@ func TestFindByName(t *testing.T) {
 	_config := app.Config{
 		ProcessConfigs: []*app.ProcessConfig{
 			{
-				Name:    "p1",
-				Command: []string{"sleep", "10"},
+				CoreProcessConfig: app.CoreProcessConfig{
+					Name:    "p1",
+					Command: []string{"sleep", "10"},
+				},
 			},
 			{
-				Name:    "p2",
-				Command: []string{"ls", "-la"},
+				CoreProcessConfig: app.CoreProcessConfig{
+					Name:    "p2",
+					Command: []string{"ls", "-la"},
+				},
 			},
 		},
 	}
@@ -42,42 +46,4 @@ func TestGetLoaderFromPathYaml(t *testing.T) {
 	app.SuffixConfigLoaderMap["sfx"] = &TestLoader{}
 	loader := app.GetLoaderFromPath("/path/to/config.sfx")
 	assert.IsType(t, (*TestLoader)(nil), loader)
-}
-
-func TestValidateConfig(t *testing.T) {
-	_config := app.Config{
-		ProcessConfigs: []*app.ProcessConfig{
-			{
-				Name:    "p1",
-				Command: []string{"sleep 1"},
-			},
-			{
-				Name:    "p1",
-				Command: []string{"sleep 2"},
-			},
-		},
-	}
-
-	err := _config.Validate()
-
-	if err == nil {
-		t.Fatal("Expected failing _config validation")
-	}
-}
-
-func TestInvalidCmdLength(t *testing.T) {
-	_config := app.Config{
-		ProcessConfigs: []*app.ProcessConfig{
-			{
-				Name:    "p1",
-				Command: []string{},
-			},
-		},
-	}
-
-	err := _config.Validate()
-	if err == nil {
-		t.Fatal("Expect error for process cmd length == 0")
-	}
-
 }

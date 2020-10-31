@@ -29,7 +29,8 @@ type AdditionalProcessConfig struct {
 	DependsOn        []string            `yaml:"dependsOn"`
 	DependsOnInverse []string
 	Metadata         map[string]string `yaml:"metadata"`
-	ReadinessProbe   string            `yaml:"readinessProbe"`
+	ReadinessProbe   *ProbeConfig      `yaml:"readinessProbe"`
+	LivenessProbe    *ProbeConfig      `yaml:"livenessProbe"`
 	Env              map[string]string `yaml:"env"`
 	Disabled         bool              `yaml:"disabled"`
 }
@@ -37,6 +38,7 @@ type AdditionalProcessConfig struct {
 type ProcessConfig struct {
 	CoreProcessConfig       `yaml:",inline"`
 	AdditionalProcessConfig `yaml:",inline"`
+	_flatPropertyMap        *map[string]string
 }
 
 type Config struct {
@@ -224,16 +226,25 @@ func (c *Config) mergeGroupConfig() {
 			if !processConfig.Disabled {
 				processConfig.Disabled = groupConfig.Disabled
 			}
+			if processConfig.ReadinessProbe == nil {
+				processConfig.ReadinessProbe = groupConfig.ReadinessProbe
+			}
+			if processConfig.LivenessProbe == nil {
+				processConfig.LivenessProbe = groupConfig.LivenessProbe
+			}
 		}
-
 	}
 }
 
 func mergeStringMap(processMap map[string]string, groupMap map[string]string) map[string]string {
-	for k, v := range processMap {
-		groupMap[k] = v
+	returnMap := make(map[string]string)
+	for k, v := range groupMap {
+		returnMap[k] = v
 	}
-	return groupMap
+	for k, v := range processMap {
+		returnMap[k] = v
+	}
+	return returnMap
 }
 
 func (c *Config) expandVars() {
@@ -244,4 +255,20 @@ func (c *Config) expandVars() {
 		}
 		pConfig.Command = command
 	}
+}
+
+func (c *ProcessConfig) GetFlatPropertyMap() map[string]string {
+	if c._flatPropertyMap == nil {
+		flatPropertyMap := make(map[string]string)
+		for k, v := range c.Metadata {
+			flatPropertyMap["metadata."+k] = v
+		}
+		for k, v := range c.Env {
+			flatPropertyMap["env."+k] = v
+		}
+		flatPropertyMap["name"] = c.Name
+		flatPropertyMap["group"] = c.Group
+		c._flatPropertyMap = &flatPropertyMap
+	}
+	return *c._flatPropertyMap
 }
