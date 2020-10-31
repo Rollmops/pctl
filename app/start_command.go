@@ -74,7 +74,7 @@ func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string, consoleMes
 	defer wg.Done()
 	if c.Process.IsRunning() {
 		c.started = true
-		*consoleMessageChannel <- &ConsoleMessage{WarningColor("Process %s is already running\n", c.Process.Config), c.Process}
+		*consoleMessageChannel <- &ConsoleMessage{fmt.Sprintf("Process %s is already running\n", c.Process.Config), c.Process}
 		return nil
 	}
 	for {

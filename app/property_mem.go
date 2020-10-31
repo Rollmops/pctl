@@ -9,7 +9,7 @@ type MemPercentageProperty struct{}
 func init() {
 	memPercentageProperty := &MemPercentageProperty{}
 	PropertyMap["mem%"] = memPercentageProperty
-	PropertyMap["mem-percentage"] = memPercentageProperty
+	PropertyMap["mem"] = memPercentageProperty
 }
 
 func (*MemPercentageProperty) Name() string {

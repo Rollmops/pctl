@@ -9,7 +9,7 @@ func RestartCommand(names []string, filters Filters, comment string, kill bool) 
 	if err != nil {
 		return err
 	}
-	err = StopProcesses(processes, false, kill)
+	stoppedProcesses, err := StopProcesses(processes, false, kill)
 	if err != nil {
 		return err
 	}
@@ -19,5 +19,5 @@ func RestartCommand(names []string, filters Filters, comment string, kill bool) 
 		return err
 	}
 
-	return StartProcesses(processes, comment)
+	return StartProcesses(stoppedProcesses, comment)
 }

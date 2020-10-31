@@ -45,13 +45,14 @@ type Config struct {
 }
 
 func (c *Config) Initialize() error {
-	err := c.fillDependsOnInverse()
+	c.expandVars()
+	c.mergeGroupConfig()
+
+	err := c.validateAcyclicDependencies()
 	if err != nil {
 		return err
 	}
-	c.expandVars()
-	c.mergeGroupConfig()
-	return c.validateAcyclicDependencies()
+	return c.fillDependsOnInverse()
 }
 
 func (c *ProcessConfig) String() string {

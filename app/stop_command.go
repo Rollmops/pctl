@@ -14,19 +14,18 @@ func StopCommand(names []string, filters Filters, noWait bool, kill bool) error 
 	if len(processes) == 0 {
 		return fmt.Errorf(MsgNoMatchingProcess)
 	}
-
-	return StopProcesses(processes, noWait, kill)
+	_, err = StopProcesses(processes, noWait, kill)
+	return err
 }
 
-func StopProcesses(processes []*Process, noWait bool, kill bool) error {
+func StopProcesses(processes []*Process, noWait bool, kill bool) ([]*Process, error) {
 	processStateMap, err := NewProcessStateMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOnInverse
 		})
 	if err != nil {
-		return err
+		return nil, err
 	}
-
 	var wg sync.WaitGroup
 	consoleMessageChannel := make(ConsoleMessageChannel)
 	wg.Add(len(*processStateMap))
@@ -41,7 +40,12 @@ func StopProcesses(processes []*Process, noWait bool, kill bool) error {
 	}
 
 	consoleMessageChannel.PrintRelevant(processes)
-	return nil
+
+	var stoppedProcesses []*Process
+	for _, v := range *processStateMap {
+		stoppedProcesses = append(stoppedProcesses, v.Process)
+	}
+	return stoppedProcesses, nil
 }
 
 func (c *ProcessState) Stop(noWait bool, kill bool, consoleMessageChannel *ConsoleMessageChannel) error {
