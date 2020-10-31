@@ -1,5 +1,7 @@
 package app
 
+import "fmt"
+
 type ProcessState struct {
 	Process      *Process
 	dependencies []*ProcessState
@@ -62,6 +64,9 @@ func addToProcessStateMap(p *Process, processStateMap map[string]*ProcessState, 
 		dependencyConfigs, err := CurrentContext.Config.FindByGroupNameSpecifier(d)
 		if err != nil {
 			return nil, err
+		}
+		if len(dependencyConfigs) == 0 {
+			return nil, fmt.Errorf("unable to find processes for specifier '%s'", d)
 		}
 		for _, dependencyConfig := range dependencyConfigs {
 			dependencyProcess, err := CurrentContext.GetProcessByConfig(dependencyConfig)
