@@ -14,9 +14,8 @@ type YamlLoader struct {
 }
 
 type _rawConfig struct {
-	Includes     []string
-	Processes    []*ProcessConfig
-	StopStrategy StopStrategyConfig
+	Includes []string `yaml:"includes"`
+	Config   `yaml:",inline"`
 }
 
 func NewYamlLoader() *YamlLoader {
@@ -31,15 +30,15 @@ func (l *YamlLoader) Load(path string) (*Config, error) {
 	}
 
 	_config := Config{
-		ProcessConfigs: rawConfig.Processes,
+		ProcessConfigs: rawConfig.ProcessConfigs,
+		Groups:         rawConfig.Groups,
 	}
 
 	err = loadIncludes(path, rawConfig.Includes, &_config)
 	if err != nil {
 		return nil, err
 	}
-	err = _config.Validate()
-	return &_config, err
+	return &_config, nil
 }
 
 func loadIncludes(baseConfigPath string, includes []string, config *Config) error {
@@ -58,7 +57,7 @@ func loadIncludes(baseConfigPath string, includes []string, config *Config) erro
 			if err != nil {
 				return err
 			}
-			config.ProcessConfigs = append(config.ProcessConfigs, rawConfig.Processes...)
+			config.ProcessConfigs = append(config.ProcessConfigs, rawConfig.ProcessConfigs...)
 		}
 	}
 	return nil

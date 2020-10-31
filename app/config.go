@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"github.com/yourbasic/graph"
 	"os"
 	"path"
 	"strings"
@@ -10,39 +11,48 @@ import (
 
 const _configFileName string = "pctl.yml"
 
+var SuffixConfigLoaderMap = make(map[string]Loader)
+
 type Loader interface {
 	Load(path string) (*Config, error)
 }
 
-type ProcessConfig struct {
-	Name             string
-	Group            string
+type CoreProcessConfig struct {
+	Name    string   `yaml:"name"`
+	Group   string   `yaml:"group"`
+	Command []string `yaml:"cmd"`
+}
+
+type AdditionalProcessConfig struct {
 	WaitAfterStart   string              `yaml:"waitAfterStart"`
-	Command          []string            `yaml:"cmd"`
 	StopStrategy     *StopStrategyConfig `yaml:"stop"`
 	DependsOn        []string            `yaml:"dependsOn"`
 	DependsOnInverse []string
 	Metadata         map[string]string `yaml:"metadata"`
 	ReadinessProbe   string            `yaml:"readinessProbe"`
-	StartupProbe     string            `yaml:"startupProbe"`
 	Env              map[string]string `yaml:"env"`
+	Disabled         bool              `yaml:"disabled"`
+}
+
+type ProcessConfig struct {
+	CoreProcessConfig       `yaml:",inline"`
+	AdditionalProcessConfig `yaml:",inline"`
 }
 
 type Config struct {
-	ProcessConfigs []*ProcessConfig
+	ProcessConfigs []*ProcessConfig                    `yaml:"processes"`
+	Groups         map[string]*AdditionalProcessConfig `yaml:"groups"`
 }
 
-func (c *Config) ExpandVars() {
-	for _, pConfig := range c.ProcessConfigs {
-		var command []string
-		for _, arg := range pConfig.Command {
-			command = append(command, ExpandPath(arg))
-		}
-		pConfig.Command = command
+func (c *Config) Initialize() error {
+	err := c.fillDependsOnInverse()
+	if err != nil {
+		return err
 	}
+	c.expandVars()
+	c.mergeGroupConfig()
+	return c.validateAcyclicDependencies()
 }
-
-var SuffixConfigLoaderMap = make(map[string]Loader)
 
 func (c *ProcessConfig) String() string {
 	if c.Group == "" {
@@ -123,7 +133,7 @@ func getFilteredProcesses(processes ProcessList, filters Filters) ([]*Process, e
 	return processes, nil
 }
 
-func (c *Config) FillDependsOnInverse() error {
+func (c *Config) fillDependsOnInverse() error {
 	for _, pConfig := range c.ProcessConfigs {
 		for _, dependsOn := range pConfig.DependsOn {
 			dependencyConfigs, err := c.FindByGroupNameSpecifier(dependsOn)
@@ -134,7 +144,7 @@ func (c *Config) FillDependsOnInverse() error {
 				return fmt.Errorf("unable to find process config matching %s", dependsOn)
 			}
 			for _, dependencyConfig := range dependencyConfigs {
-				if !_isInList(dependencyConfig.DependsOnInverse, pConfig.Name) {
+				if !IsInStringList(dependencyConfig.DependsOnInverse, pConfig.Name) {
 					dependencyConfig.DependsOnInverse = append(dependencyConfig.DependsOnInverse, pConfig.Name)
 				}
 			}
@@ -175,4 +185,62 @@ func GetLoaderFromPath(path string) Loader {
 	fractions := strings.Split(path, ".")
 	suffix := fractions[len(fractions)-1]
 	return SuffixConfigLoaderMap[suffix]
+}
+
+func (c *Config) validateAcyclicDependencies() error {
+	mapping := make(map[string]int)
+	for i, _config := range c.ProcessConfigs {
+		mapping[_config.Name] = i
+	}
+
+	gm := graph.New(len(c.ProcessConfigs))
+	for _, _config := range c.ProcessConfigs {
+		for _, n := range _config.DependsOn {
+			gm.Add(mapping[_config.Name], mapping[n])
+		}
+	}
+	if !graph.Acyclic(gm) {
+		return fmt.Errorf("process dependency configuration is not acyclic")
+	}
+	return nil
+}
+
+func (c *Config) mergeGroupConfig() {
+	for _, processConfig := range c.ProcessConfigs {
+		groupConfig := c.Groups[processConfig.Group]
+		if groupConfig != nil {
+			processConfig.Env = mergeStringMap(processConfig.Env, groupConfig.Env)
+			processConfig.Metadata = mergeStringMap(processConfig.Metadata, groupConfig.Metadata)
+			if processConfig.WaitAfterStart == "" {
+				processConfig.WaitAfterStart = groupConfig.WaitAfterStart
+			}
+			if processConfig.StopStrategy == nil {
+				processConfig.StopStrategy = groupConfig.StopStrategy
+			}
+			if len(processConfig.DependsOn) == 0 {
+				processConfig.DependsOn = groupConfig.DependsOn
+			}
+			if !processConfig.Disabled {
+				processConfig.Disabled = groupConfig.Disabled
+			}
+		}
+
+	}
+}
+
+func mergeStringMap(processMap map[string]string, groupMap map[string]string) map[string]string {
+	for k, v := range processMap {
+		groupMap[k] = v
+	}
+	return groupMap
+}
+
+func (c *Config) expandVars() {
+	for _, pConfig := range c.ProcessConfigs {
+		var command []string
+		for _, arg := range pConfig.Command {
+			command = append(command, ExpandPath(arg))
+		}
+		pConfig.Command = command
+	}
 }

@@ -152,3 +152,12 @@ func FileExists(path string) bool {
 	}
 	return true
 }
+
+func IsInStringList(stringList []string, string string) bool {
+	for _, s := range stringList {
+		if s == string {
+			return true
+		}
+	}
+	return false
+}
