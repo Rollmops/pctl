@@ -44,6 +44,6 @@ func TestFindByName(t *testing.T) {
 
 func TestGetLoaderFromPathYaml(t *testing.T) {
 	app.SuffixConfigLoaderMap["sfx"] = &TestLoader{}
-	loader := app.GetLoaderFromPath("/path/to/config.sfx")
+	loader := app.GetLoaderFromPath("/Path/to/config.sfx")
 	assert.IsType(t, (*TestLoader)(nil), loader)
 }

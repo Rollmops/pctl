@@ -31,14 +31,10 @@ func (c *Context) GetProcessByConfig(processConfig *ProcessConfig) (*Process, er
 	return nil, fmt.Errorf("unable to find process for config '%v'", processConfig)
 }
 
-func (c *Context) Initialize() error {
+func (c *Context) InitializeRunningProcessInfo() error {
 	logrus.Debug("Start initializing app context")
-	err := c.LoadConfig()
-	if err != nil {
-		return err
-	}
 	c.RefreshProcessesFromConfig()
-	err = c.Cache.Refresh()
+	err := c.Cache.Refresh()
 	if err != nil {
 		return err
 	}
@@ -51,7 +47,7 @@ func (c *Context) LoadConfig() error {
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("Using Config path: %s", configPath)
+	logrus.Debugf("Using Config Path: %s", configPath)
 	configLoader := GetLoaderFromPath(configPath)
 	c.Config, err = configLoader.Load(configPath)
 	if err != nil {

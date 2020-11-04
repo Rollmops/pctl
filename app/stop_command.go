@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/Songmu/prompter"
 	"sync"
 	"time"
 )
@@ -11,98 +12,120 @@ func StopCommand(names []string, filters Filters, noWait bool, kill bool) error 
 	if err != nil {
 		return err
 	}
+
 	if len(processes) == 0 {
 		return fmt.Errorf(MsgNoMatchingProcess)
+	}
+
+	if CurrentContext.Config.PromptForStop && !prompter.YN(fmt.Sprintf("Do you really want to proceed stopping?"), false) {
+		return nil
 	}
 	_, err = StopProcesses(processes, noWait, kill)
 	return err
 }
 
 func StopProcesses(processes []*Process, noWait bool, kill bool) ([]*Process, error) {
-	processStateMap, err := NewProcessStateMap(
+	processStateMap, err := NewProcessGraphMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOnInverse
 		})
 	if err != nil {
 		return nil, err
 	}
+
 	var wg sync.WaitGroup
-	consoleMessageChannel := make(ConsoleMessageChannel)
+
+	processStatusChannel := make(chan *ProcessStateChange)
 	wg.Add(len(*processStateMap))
 
 	go func() {
 		wg.Wait()
-		close(consoleMessageChannel)
+		close(processStatusChannel)
 	}()
 
 	for _, processState := range *processStateMap {
-		go processState.StopAsync(noWait, kill, &wg, &consoleMessageChannel)
+		go processState.StopAsync(noWait, kill, &wg, &processStatusChannel)
 	}
-
-	consoleMessageChannel.PrintRelevant(processes)
-
 	var stoppedProcesses []*Process
-	for _, v := range *processStateMap {
-		stoppedProcesses = append(stoppedProcesses, v.Process)
+
+	for processChange := range processStatusChannel {
+		switch processChange.State {
+		case StateStopped:
+			stoppedProcesses = append(stoppedProcesses, processChange.Process)
+			fmt.Printf(OkColor("Stopped process %s\n", processChange.Process.Config.String()))
+		case StateStoppingError:
+			fmt.Printf(FailedColor("Error during process stop of %s (%s)\n", processChange.Process.Config.String(), processChange.Error.Error()))
+		case StateDependencyStoppingError:
+			fmt.Printf(WarningColor("Will not stop %s\n", processChange.Process.Config.String()))
+		case StateKilled:
+			stoppedProcesses = append(stoppedProcesses, processChange.Process)
+			fmt.Printf(WarningColor("Killed process %s\n", processChange.Process.Config.String()))
+		}
 	}
+
 	return stoppedProcesses, nil
 }
 
-func (c *ProcessState) Stop(noWait bool, kill bool, consoleMessageChannel *ConsoleMessageChannel) error {
+func (c *ProcessGraphNode) Stop(noWait bool, kill bool, processStatusChannel *chan *ProcessStateChange) error {
+	*processStatusChannel <- &ProcessStateChange{StateStopping, nil, c.Process}
 	err := c.Process.Stop()
 	if err != nil {
 		c.stopErr = &err
+		*processStatusChannel <- &ProcessStateChange{StateStoppingError, err, c.Process}
 		return err
 	}
-	if !noWait {
-		stopped, err := c.Process.WaitForStop(5*time.Second, 100*time.Millisecond)
+	if noWait {
+		*processStatusChannel <- &ProcessStateChange{StateStopped, nil, c.Process}
+		c.stopped = true
+		return nil
+	}
+	stopped, err := c.Process.WaitForStop()
+	if err != nil {
+		c.stopErr = &err
+		*processStatusChannel <- &ProcessStateChange{StateStoppingError, err, c.Process}
+		return err
+	}
+	if stopped {
+		*processStatusChannel <- &ProcessStateChange{StateStopped, nil, c.Process}
+		c.stopped = true
+		return nil
+	}
+	if kill {
+		*processStatusChannel <- &ProcessStateChange{StateKilling, nil, c.Process}
+		err := c.Process.Kill()
 		if err != nil {
 			c.stopErr = &err
+			*processStatusChannel <- &ProcessStateChange{StateKillingError, err, c.Process}
 			return err
 		}
-		if !stopped {
-			if kill {
-				*consoleMessageChannel <- &ConsoleMessage{WarningColor("Unable to stop %s ... killing\n", c.Process.Config), nil}
-				err := c.Process.Kill()
-				if err != nil {
-					c.stopErr = &err
-					return err
-				}
-				c.stopped = true
-			} else {
-				err := fmt.Errorf("unable to stop %s", c.Process.Config)
-				c.stopErr = &err
-				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Unable to stop %s\n", c.Process.Config), nil}
-				return nil
-			}
-		}
+		*processStatusChannel <- &ProcessStateChange{StateKilled, nil, c.Process}
+		c.stopped = true
+		return nil
 	}
-	c.stopped = true
-	return nil
+	err = fmt.Errorf("timeout")
+	*processStatusChannel <- &ProcessStateChange{StateStoppingError, err, c.Process}
+	c.stopErr = &err
+	return err
 }
 
-func (c *ProcessState) StopAsync(noWait bool, kill bool, wg *sync.WaitGroup, consoleMessageChannel *ConsoleMessageChannel) error {
+func (c *ProcessGraphNode) StopAsync(noWait bool, kill bool, wg *sync.WaitGroup, processStatusChannel *chan *ProcessStateChange) {
 	defer wg.Done()
 	if !c.Process.IsRunning() {
+		*processStatusChannel <- &ProcessStateChange{StateNotRunning, nil, c.Process}
 		c.stopped = true
-		*consoleMessageChannel <- &ConsoleMessage{fmt.Sprintf("Process %s has already stopped\n", c.Process.Config), c.Process}
-		return nil
+		return
 	}
 	for {
 		readyToStop, err := c.IsReadyToStop()
+
 		if err != nil {
-			*consoleMessageChannel <- &ConsoleMessage{WarningColor("Will not stop %s\n", c.Process.Config), nil}
+			*processStatusChannel <- &ProcessStateChange{StateDependencyStoppingError, nil, c.Process}
 			c.stopErr = &err
-			return nil
+			return
 		}
 		if readyToStop {
-			err := c.Stop(noWait, kill, consoleMessageChannel)
-			if err != nil {
-				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Error during stopping %s (%s)\n", c.Process.Config, err), nil}
-			} else {
-				*consoleMessageChannel <- &ConsoleMessage{OkColor("Stopped process %s\n", c.Process.Config), nil}
-			}
-			return err
+			_ = c.Stop(noWait, kill, processStatusChannel)
+			return
 		}
 		time.Sleep(100 * time.Millisecond)
 	}

@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/facebookgo/pidfile"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -58,13 +57,16 @@ func CreateCliApp() (*cli.App, error) {
 			logLevelString := c.String("loglevel")
 			level, err := logrus.ParseLevel(logLevelString)
 			if err != nil {
-				return fmt.Errorf("Unable to parse loglevel %s\n", logLevelString)
+				logrus.Fatalf("Unable to parse loglevel %s\n", logLevelString)
 			}
 			logrus.SetLevel(level)
 			logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true, DisableColors: noColor})
 			CurrentContext.OutputWriter = os.Stdout
-			return CurrentContext.Initialize()
-
+			err = CurrentContext.LoadConfig()
+			if err != nil {
+				logrus.Fatalf(err.Error())
+			}
+			return nil
 		},
 		Name:  "pctl",
 		Usage: "process control",
@@ -94,28 +96,11 @@ func CreateCliApp() (*cli.App, error) {
 			{
 				Name:  "agent",
 				Usage: "pctl agent command group",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "pid-file",
-						EnvVars: []string{"PCTL_AGENT_PID_FILE"},
-						Usage:   "Path to the file to store and read the agent pid",
-						Value:   "/tmp/pctl-agent.pid",
-					},
-				},
-				Before: func(context *cli.Context) error {
-					pidfile.SetPidfilePath(context.String("pid-file"))
-					return nil
-				},
 				Subcommands: []*cli.Command{
 					{
 						Name:  "start",
 						Usage: "start the pctl agent",
 						Flags: []cli.Flag{
-							&cli.StringFlag{
-								Name:    "log-path",
-								EnvVars: []string{"PCTL_AGENT_LOG_PATH"},
-							},
-
 							&cli.BoolFlag{
 								Name:    "detach",
 								Usage:   "detach mode - run the agent in the background",
@@ -124,7 +109,7 @@ func CreateCliApp() (*cli.App, error) {
 							},
 						},
 						Action: func(c *cli.Context) error {
-							return AgentStartCommand(c.String("log-path"), c.Bool("detach"))
+							return AgentStartCommand(c.Bool("detach"))
 						},
 					},
 					{
@@ -171,6 +156,9 @@ func CreateCliApp() (*cli.App, error) {
 					stoppedFlag,
 					dirtyFlag,
 				},
+				Before: func(_ *cli.Context) error {
+					return CurrentContext.InitializeRunningProcessInfo()
+				},
 				Action: func(c *cli.Context) error {
 					filters, err := createFilters(c)
 					if err != nil {
@@ -197,6 +185,9 @@ func CreateCliApp() (*cli.App, error) {
 					stoppedFlag,
 					dirtyFlag,
 				},
+				Before: func(_ *cli.Context) error {
+					return CurrentContext.InitializeRunningProcessInfo()
+				},
 				Action: func(c *cli.Context) error {
 					filters, err := createFilters(c)
 					if err != nil {
@@ -220,6 +211,9 @@ func CreateCliApp() (*cli.App, error) {
 					runningFlag,
 					stoppedFlag,
 					dirtyFlag,
+				},
+				Before: func(_ *cli.Context) error {
+					return CurrentContext.InitializeRunningProcessInfo()
 				},
 				Action: func(c *cli.Context) error {
 					filters, err := createFilters(c)
@@ -246,6 +240,9 @@ func CreateCliApp() (*cli.App, error) {
 					runningFlag,
 					stoppedFlag,
 					dirtyFlag,
+				},
+				Before: func(_ *cli.Context) error {
+					return CurrentContext.InitializeRunningProcessInfo()
 				},
 				Action: func(c *cli.Context) error {
 					filters, err := createFilters(c)
@@ -294,6 +291,9 @@ func CreateCliApp() (*cli.App, error) {
 					runningFlag,
 					stoppedFlag,
 					dirtyFlag,
+				},
+				Before: func(_ *cli.Context) error {
+					return CurrentContext.InitializeRunningProcessInfo()
 				},
 				Action: func(c *cli.Context) error {
 					filters, err := createFilters(c)

@@ -20,17 +20,16 @@ type Loader interface {
 type CoreProcessConfig struct {
 	Name    string   `yaml:"name"`
 	Group   string   `yaml:"group"`
-	Command []string `yaml:"cmd"`
+	Command []string `yaml:"command"`
 }
 
 type AdditionalProcessConfig struct {
-	WaitAfterStart   string              `yaml:"waitAfterStart"`
-	StopStrategy     *StopStrategyConfig `yaml:"stop"`
-	DependsOn        []string            `yaml:"dependsOn"`
+	DependsOn        []string `yaml:"dependsOn"`
 	DependsOnInverse []string
 	Metadata         map[string]string `yaml:"metadata"`
-	ReadinessProbe   *ProbeConfig      `yaml:"readinessProbe"`
-	LivenessProbe    *ProbeConfig      `yaml:"livenessProbe"`
+	Stop             *StopConfig       `yaml:"stop"`
+	StartupProbe     *Probe            `yaml:"startupProbe"`
+	LivenessProbe    *Probe            `yaml:"livenessProbe"`
 	Env              map[string]string `yaml:"env"`
 	Disabled         bool              `yaml:"disabled"`
 }
@@ -42,6 +41,9 @@ type ProcessConfig struct {
 }
 
 type Config struct {
+	PromptForStop  bool                                `yaml:"promptForStop"`
+	PromptForStart bool                                `yaml:"promptForStart"`
+	Agent          *AgentConfig                        `yaml:"agent"`
 	ProcessConfigs []*ProcessConfig                    `yaml:"processes"`
 	Groups         map[string]*AdditionalProcessConfig `yaml:"groups"`
 }
@@ -62,6 +64,13 @@ func (c *ProcessConfig) String() string {
 		return c.Name
 	}
 	return fmt.Sprintf("%s:%s", c.Group, c.Name)
+}
+
+func (c *ProcessConfig) GetStopConfig() *StopConfig {
+	if c.Stop == nil {
+		return &StopConfig{}
+	}
+	return c.Stop
 }
 
 func (c *Config) FindByGroupAndName(group string, name string) *ProcessConfig {
@@ -181,7 +190,7 @@ func GetConfigPath() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("Unable to to find valid config path: %v\n", possibleConfigPaths)
+	return "", fmt.Errorf("Unable to to find valid config Path: %v\n", possibleConfigPaths)
 }
 
 func GetLoaderFromPath(path string) Loader {
@@ -212,13 +221,10 @@ func (c *Config) mergeGroupConfig() {
 	for _, processConfig := range c.ProcessConfigs {
 		groupConfig := c.Groups[processConfig.Group]
 		if groupConfig != nil {
-			processConfig.Env = mergeStringMap(processConfig.Env, groupConfig.Env)
-			processConfig.Metadata = mergeStringMap(processConfig.Metadata, groupConfig.Metadata)
-			if processConfig.WaitAfterStart == "" {
-				processConfig.WaitAfterStart = groupConfig.WaitAfterStart
-			}
-			if processConfig.StopStrategy == nil {
-				processConfig.StopStrategy = groupConfig.StopStrategy
+			processConfig.Env = MergeStringMap(groupConfig.Env, processConfig.Env)
+			processConfig.Metadata = MergeStringMap(groupConfig.Metadata, processConfig.Metadata)
+			if processConfig.Stop == nil {
+				processConfig.Stop = groupConfig.Stop
 			}
 			if len(processConfig.DependsOn) == 0 {
 				processConfig.DependsOn = groupConfig.DependsOn
@@ -226,25 +232,14 @@ func (c *Config) mergeGroupConfig() {
 			if !processConfig.Disabled {
 				processConfig.Disabled = groupConfig.Disabled
 			}
-			if processConfig.ReadinessProbe == nil {
-				processConfig.ReadinessProbe = groupConfig.ReadinessProbe
+			if processConfig.StartupProbe == nil {
+				processConfig.StartupProbe = groupConfig.StartupProbe
 			}
 			if processConfig.LivenessProbe == nil {
 				processConfig.LivenessProbe = groupConfig.LivenessProbe
 			}
 		}
 	}
-}
-
-func mergeStringMap(processMap map[string]string, groupMap map[string]string) map[string]string {
-	returnMap := make(map[string]string)
-	for k, v := range groupMap {
-		returnMap[k] = v
-	}
-	for k, v := range processMap {
-		returnMap[k] = v
-	}
-	return returnMap
 }
 
 func (c *Config) expandVars() {

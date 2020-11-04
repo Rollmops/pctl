@@ -14,7 +14,7 @@ func init() {
 }
 
 func (*StatusProperty) Name() string {
-	return "Status"
+	return "State"
 }
 
 func (*StatusProperty) Value(p *Process, formatted bool) (string, error) {

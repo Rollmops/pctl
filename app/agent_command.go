@@ -2,16 +2,14 @@ package app
 
 import (
 	"fmt"
-	"github.com/facebookgo/pidfile"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"os/exec"
-	"os/signal"
 	"syscall"
 )
 
 func AgentReloadCommand() error {
+	InitializeAgentPidFile()
 	agentProcess, err := FindAgentProcess()
 	if err != nil {
 		return err
@@ -24,6 +22,7 @@ func AgentReloadCommand() error {
 }
 
 func AgentStatusCommand(deriveExitCode bool) error {
+	InitializeAgentPidFile()
 	agentProcess, err := FindAgentProcess()
 	if err != nil {
 		return err
@@ -39,16 +38,13 @@ func AgentStatusCommand(deriveExitCode bool) error {
 	return nil
 }
 
-func AgentStartCommand(logPath string, detach bool) error {
-	logrus.SetLevel(logrus.InfoLevel)
-	if logPath != "" {
-		logrus.SetOutput(&lumberjack.Logger{
-			Filename:   logPath,
-			MaxSize:    100, // megabytes
-			MaxBackups: 3,
-			MaxAge:     28,   //days
-			Compress:   true, // disabled by default
-		})
+func AgentStartCommand(detach bool) error {
+	InitializeAgentPidFile()
+	if detach {
+		err := SetAgentLogger()
+		if err != nil {
+			return err
+		}
 	}
 	_, isAgent := os.LookupEnv("__PCTL_AGENT__")
 	if !isAgent && detach {
@@ -67,47 +63,34 @@ func AgentStartCommand(logPath string, detach bool) error {
 		if err != nil {
 			return err
 		}
-		logrus.Infof("Watcher running on pid %d", pid)
+		logrus.Infof("Agent running on pid %d", pid)
 	} else {
-		return startAgent()
+		return StartAgent()
 	}
 	return nil
 }
 
-func startAgent() error {
-	err := CheckRunningAgentProcess()
-	if err != nil {
-		return err
-	}
-	err = pidfile.Write()
-	if err != nil {
-		return err
-	}
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGTERM)
-	signal.Notify(c, syscall.SIGUSR1)
-	logrus.Infof("Starting %d watchers", len(CurrentContext.Config.ProcessConfigs))
-	for _, processConfig := range CurrentContext.Config.ProcessConfigs {
-		watcher := AgentWatcher{processConfig: processConfig}
-		go watcher.Start()
-	}
-
-	for {
-		s := <-c
-		if s == syscall.SIGTERM {
-			logrus.Info("Received TERM signal")
-			os.Exit(0)
-		} else if s == syscall.SIGUSR1 {
-			logrus.Info("Reloading config")
-			err := CurrentContext.Initialize()
+func SetAgentLogger() error {
+	if CurrentContext.Config.Agent.Logger != nil {
+		if CurrentContext.Config.Agent.Logger.MaxBackups == 0 {
+			CurrentContext.Config.Agent.Logger.MaxBackups = 5
+		}
+		logrus.SetOutput(CurrentContext.Config.Agent.Logger)
+		if CurrentContext.Config.Agent.Logger.Level != "" {
+			level, err := logrus.ParseLevel(CurrentContext.Config.Agent.Logger.Level)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
+			logrus.SetLevel(level)
+		} else {
+			logrus.SetLevel(logrus.InfoLevel)
 		}
 	}
+	return nil
 }
 
 func AgentStopCommand() error {
+	InitializeAgentPidFile()
 	p, err := FindAgentProcess()
 	if err != nil {
 		return err
@@ -118,7 +101,7 @@ func AgentStopCommand() error {
 			return err
 		}
 	} else {
-		logrus.Warning("pctl agent is not running")
+		logrus.Warningf("pctl agent is not running")
 	}
 	return nil
 }

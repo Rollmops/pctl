@@ -11,7 +11,7 @@ func BenchmarkReadProcessEnvironment(b *testing.B) {
 		assert.NoError(b, Run([]string{"pctl", "kill", ":"}))
 	}()
 	assert.NoError(b, test.SetConfigEnvPath("benchmark.yaml"))
-	assert.NoError(b, CurrentContext.Initialize())
+	assert.NoError(b, CurrentContext.InitializeRunningProcessInfo())
 
 	assert.NoError(b, Run([]string{"pctl", "start", ":"}))
 

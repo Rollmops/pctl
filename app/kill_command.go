@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/Songmu/prompter"
 	"sync"
 	"time"
 )
@@ -15,7 +16,11 @@ func KillCommand(names []string, filters Filters) error {
 		return fmt.Errorf(MsgNoMatchingProcess)
 	}
 
-	processStateMap, err := NewProcessStateMap(
+	if !prompter.YN(fmt.Sprintf("Do you really want to proceed killing?"), false) {
+		return nil
+	}
+
+	processStateMap, err := NewProcessGraphMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOnInverse
 		})
@@ -23,44 +28,52 @@ func KillCommand(names []string, filters Filters) error {
 		return err
 	}
 
+	processStatusChannel := make(chan *ProcessStateChange)
 	var wg sync.WaitGroup
-	consoleMessageChannel := make(ConsoleMessageChannel)
 	wg.Add(len(*processStateMap))
 
 	go func() {
 		wg.Wait()
-		close(consoleMessageChannel)
+		close(processStatusChannel)
 	}()
 
 	for _, processState := range *processStateMap {
-		go processState.KillAsync(&wg, &consoleMessageChannel)
+		go processState.KillAsync(&wg, &processStatusChannel)
 	}
 
-	consoleMessageChannel.PrintRelevant(processes)
+	for processStateChange := range processStatusChannel {
+		switch processStateChange.State {
+		case StateKilled:
+			fmt.Printf(WarningColor("Killed process %s\n", processStateChange.Process.Config.String()))
+		case StateKillingError:
+			fmt.Printf(FailedColor("Error during process kill of %s (%s)\n", processStateChange.Process.Config.String(), processStateChange.Error.Error()))
+		}
+	}
+
 	return nil
 }
 
-func (c *ProcessState) KillAsync(wg *sync.WaitGroup, consoleMessageChannel *ConsoleMessageChannel) error {
+func (c *ProcessGraphNode) KillAsync(wg *sync.WaitGroup, processStateChannel *chan *ProcessStateChange) {
 	defer func() {
 		wg.Done()
 		c.stopped = true
 	}()
 	if !c.Process.IsRunning() {
 		c.stopped = true
-		*consoleMessageChannel <- &ConsoleMessage{WarningColor("Process %s has already stopped\n", c.Process.Config), c.Process}
-		return nil
+		*processStateChannel <- &ProcessStateChange{StateNotRunning, nil, c.Process}
+		return
 	}
 	for {
-		// ignore err since we killing ... everything is lost anyway
-		isReady, _ := c.IsReadyToStop()
-		if isReady {
+		ready, _ := c.IsReadyToStop()
+		if ready {
+			*processStateChannel <- &ProcessStateChange{StateKilling, nil, c.Process}
 			err := c.Process.Kill()
 			if err != nil {
-				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Failed to kill %s (%s)\n", c.Process.Config, err), nil}
+				*processStateChannel <- &ProcessStateChange{StateKillingError, err, c.Process}
 			} else {
-				*consoleMessageChannel <- &ConsoleMessage{OkColor("Killed process %s\n", c.Process.Config), nil}
+				*processStateChannel <- &ProcessStateChange{StateKilled, nil, c.Process}
 			}
-			return err
+			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}

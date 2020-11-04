@@ -14,8 +14,11 @@ import (
 	"time"
 )
 
-func WaitUntilTrue(testFunction func() (bool, error), interval time.Duration, attempts uint) (bool, error) {
-	var _attempt uint = 0
+func WaitUntilTrue(testFunction func() (bool, error), timeout time.Duration, interval time.Duration) (bool, error) {
+	if interval > timeout {
+		return false, fmt.Errorf("interval %s is greater than timeout %s", interval, timeout)
+	}
+	start := time.Now()
 	for {
 		result, err := testFunction()
 		if err != nil {
@@ -24,8 +27,7 @@ func WaitUntilTrue(testFunction func() (bool, error), interval time.Duration, at
 		if result == true {
 			return true, nil
 		}
-		_attempt++
-		if _attempt >= attempts {
+		if time.Since(start) > timeout {
 			return false, nil
 		}
 		time.Sleep(interval)
@@ -118,28 +120,28 @@ func CreateFileHashesFromCommand(command []string) (*map[string]string, error) {
 }
 
 func GetFullPathFromFile(path string) (string, error) {
-	logrus.Tracef("Getting full path of %s", path)
+	logrus.Tracef("Getting full Path of %s", path)
 	fullPath, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
 	}
-	logrus.Tracef("Trying absolute path %s", fullPath)
+	logrus.Tracef("Trying absolute Path %s", fullPath)
 	if FileExists(fullPath) {
 		return fullPath, nil
 	}
 	fullPath, err = exec.LookPath(path)
-	logrus.Tracef("Trying lookup path %s", fullPath)
+	logrus.Tracef("Trying lookup Path %s", fullPath)
 	if err != nil {
 		return "", err
 	}
 	if FileExists(fullPath) {
 		return fullPath, nil
 	}
-	return "", fmt.Errorf("unable to find path %s", path)
+	return "", fmt.Errorf("unable to find Path %s", path)
 }
 
 func FileExists(path string) bool {
-	logrus.Tracef("Checking path %s exists", path)
+	logrus.Tracef("Checking Path %s exists", path)
 	info, err := os.Lstat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -160,4 +162,15 @@ func IsInStringList(stringList []string, string string) bool {
 		}
 	}
 	return false
+}
+
+func MergeStringMap(map1 map[string]string, map2 map[string]string) map[string]string {
+	returnMap := make(map[string]string)
+	for k, v := range map1 {
+		returnMap[k] = v
+	}
+	for k, v := range map2 {
+		returnMap[k] = v
+	}
+	return returnMap
 }

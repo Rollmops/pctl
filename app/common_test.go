@@ -19,13 +19,13 @@ func TestWaitUntilTrue(t *testing.T) {
 
 	if finished, _ := app.WaitUntilTrue(func() (bool, error) {
 		return _testVariable == "Test1", nil
-	}, 10*time.Millisecond, 30); finished == true {
+	}, 300*time.Millisecond, 10*time.Millisecond); finished == true {
 		t.Fatal("did not expect variable to be set after 300ms")
 	}
 
 	if finished, _ := app.WaitUntilTrue(func() (bool, error) {
 		return _testVariable == "Test1", nil
-	}, 10*time.Millisecond, 30); finished == false {
+	}, 300*time.Millisecond, 10*time.Millisecond); finished == false {
 		t.Fatal("did expect variable to be set after 600ms")
 	}
 }

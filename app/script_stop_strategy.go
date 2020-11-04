@@ -1,11 +1,7 @@
 package app
 
-type ScriptStopStrategyConfig struct {
-	Script `yaml:",inline"`
-}
-
 type ScriptStopStrategy struct {
-	ScriptStopStrategyConfig
+	Exec `yaml:",inline"`
 }
 
 func (s *ScriptStopStrategy) Stop(process *Process) error {

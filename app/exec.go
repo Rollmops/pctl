@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -8,29 +9,33 @@ import (
 	"strconv"
 )
 
-type Script struct {
-	Path          string
-	Args          []string
-	ForwardStdout bool `yaml:"forwardStdout"`
-	ForwardStderr bool `yaml:"forwardStderr"`
+type Exec struct {
+	Command       []string `yaml:"command"`
+	ForwardStdout bool     `yaml:"forwardStdout"`
+	ForwardStderr bool     `yaml:"forwardStderr"`
 }
 
-func (s *Script) CreateCommand(process *Process) (*exec.Cmd, error) {
+func (s *Exec) CreateCommand(process *Process) (*exec.Cmd, error) {
+	if len(s.Command) == 0 {
+		return nil, fmt.Errorf("command length of exec probe is 0")
+	}
 	mapping := process.Config.GetFlatPropertyMap()
 	if process.RunningInfo != nil {
 		mapping["pid"] = strconv.Itoa(int(process.RunningInfo.Pid))
 	}
-	scriptPath, err := filepath.Abs(ExpandPath(s.Path))
+
+	name, err := filepath.Abs(ExpandPath(s.Command[0]))
 	if err != nil {
 		return nil, err
 	}
-
-	var substArgs []string
-	for _, arg := range s.Args {
-		substArg := replaceVariables(arg, mapping)
-		substArgs = append(substArgs, substArg)
+	var args []string
+	if len(s.Command) > 1 {
+		for _, arg := range s.Command[1:] {
+			substArg := replaceVariables(arg, mapping)
+			args = append(args, substArg)
+		}
 	}
-	cmd := exec.Command(scriptPath, substArgs...)
+	cmd := exec.Command(name, args...)
 	if s.ForwardStdout {
 		cmd.Stdout = os.Stdout
 	}
@@ -41,7 +46,7 @@ func (s *Script) CreateCommand(process *Process) (*exec.Cmd, error) {
 }
 
 func replaceVariables(text string, replaceMap map[string]string) string {
-	re := regexp.MustCompile(`\$\{(\S+)\}`)
+	re := regexp.MustCompile(`\${(\S+)}`)
 	s := re.ReplaceAllStringFunc(text, func(s string) string {
 		matches := re.FindAllStringSubmatch(s, 1)
 		if len(matches) == 1 {

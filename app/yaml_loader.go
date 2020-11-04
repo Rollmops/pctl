@@ -29,16 +29,11 @@ func (l *YamlLoader) Load(path string) (*Config, error) {
 		return nil, err
 	}
 
-	_config := Config{
-		ProcessConfigs: rawConfig.ProcessConfigs,
-		Groups:         rawConfig.Groups,
-	}
-
-	err = loadIncludes(path, rawConfig.Includes, &_config)
+	err = loadIncludes(path, rawConfig.Includes, &rawConfig.Config)
 	if err != nil {
 		return nil, err
 	}
-	return &_config, nil
+	return &rawConfig.Config, nil
 }
 
 func loadIncludes(baseConfigPath string, includes []string, config *Config) error {
@@ -68,11 +63,11 @@ func loadYamlFromPath(path string) (*_rawConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var rawConfig _rawConfig
-	if err := yaml.Unmarshal(content, &rawConfig); err != nil {
+	if err := yaml.UnmarshalStrict(content, &rawConfig); err != nil {
 		return nil, fmt.Errorf("error reading YAML %s: %s", path, err.Error())
 	}
-
 	return &rawConfig, nil
 }
 

@@ -2,12 +2,11 @@ package app
 
 import (
 	"fmt"
+	gopsutil "github.com/shirou/gopsutil/process"
 	"os"
 	"os/exec"
 	"syscall"
 	"time"
-
-	gopsutil "github.com/shirou/gopsutil/process"
 )
 
 type ProcessList []*Process
@@ -79,40 +78,21 @@ func (p *Process) Start(comment string) (int32, error) {
 	return int32(cmd.Process.Pid), err
 }
 
-func (p *Process) WaitForReady(pid int32) (bool, error) {
-	readinessProbe := p.Config.ReadinessProbe
-	if readinessProbe != nil {
+func (p *Process) WaitForStartup(pid int32) (bool, error) {
+	startupProbe := p.Config.StartupProbe
+	if startupProbe != nil {
 		if p.RunningInfo == nil {
 			p.RunningInfo = &RunningInfo{Pid: pid}
 		} else {
 			p.RunningInfo.Pid = pid
 		}
-		timeout, err := readinessProbe.GetTimeout()
-		if err != nil {
-			return false, err
-		}
-		intervalDuration, err := readinessProbe.GetInterval()
-		if err != nil {
-			return false, err
-		}
-		attempts := timeout / intervalDuration
-		ready, err := WaitUntilTrue(func() (bool, error) {
-			running, err := readinessProbe.Probe(p)
-			if err != nil {
-				return false, err
-			}
-			return running, nil
-		}, intervalDuration, uint(attempts))
-		if err != nil {
-			return false, err
-		}
-		return ready, nil
+		return startupProbe.Probe(p, 100*time.Millisecond)
 	}
 	return true, nil
 }
 
 func (p *Process) Stop() error {
-	stopStrategy := NewStopStrategyFromConfig(p.Config.StopStrategy)
+	stopStrategy := NewStopStrategyFromConfig(p.Config.Stop)
 	err := stopStrategy.Stop(p)
 	if err != nil {
 		return err
@@ -120,11 +100,18 @@ func (p *Process) Stop() error {
 	return nil
 }
 
-func (p *Process) WaitForStop(timeout time.Duration, intervalDuration time.Duration) (bool, error) {
-	attempts := timeout / intervalDuration
+func (p *Process) WaitForStop() (bool, error) {
+	timeout, err := p.Config.GetStopConfig().GetTimeout()
+	if err != nil {
+		return false, err
+	}
+	interval, err := p.Config.GetStopConfig().GetInterval()
+	if err != nil {
+		return false, err
+	}
 	stopped, err := WaitUntilTrue(func() (bool, error) {
 		return !p.IsRunning(), nil
-	}, intervalDuration, uint(attempts))
+	}, timeout, interval)
 	if err != nil {
 		return false, err
 	}

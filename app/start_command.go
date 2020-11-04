@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/Songmu/prompter"
 	"sync"
 	"time"
 )
@@ -14,12 +15,17 @@ func StartCommand(names []string, filters Filters, comment string) error {
 	if len(processes) == 0 {
 		return fmt.Errorf(MsgNoMatchingProcess)
 	}
+
+	if CurrentContext.Config.PromptForStart && !prompter.YN(fmt.Sprintf("Do you really want to start?"), false) {
+		return nil
+	}
+
 	return StartProcesses(processes, comment)
 
 }
 
 func StartProcesses(processes []*Process, comment string) error {
-	processStateMap, err := NewProcessStateMap(
+	processStateMap, err := NewProcessGraphMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOn
 		})
@@ -28,72 +34,79 @@ func StartProcesses(processes []*Process, comment string) error {
 	}
 
 	var wg sync.WaitGroup
-	consoleMessageChannel := make(ConsoleMessageChannel)
+
+	processStatusChannel := make(chan *ProcessStateChange)
 	wg.Add(len(*processStateMap))
 
 	go func() {
 		wg.Wait()
-		close(consoleMessageChannel)
+		close(processStatusChannel)
 	}()
 
 	for _, processState := range *processStateMap {
-		go processState.StartAsync(&wg, comment, &consoleMessageChannel)
+		go processState.StartAsync(&wg, comment, &processStatusChannel)
 	}
-	consoleMessageChannel.PrintRelevant(processes)
+
+	for processStateChange := range processStatusChannel {
+		switch processStateChange.State {
+		case StateStarted:
+			fmt.Printf(OkColor("Started process %s\n", processStateChange.Process.Config.String()))
+		case StateStartingError:
+			fmt.Printf(FailedColor("Error during process start of %s (%s)\n", processStateChange.Process.Config.String(), processStateChange.Error.Error()))
+		case StateRunning:
+			for _, process := range processes {
+				if process.Config.String() == processStateChange.Process.Config.String() {
+					fmt.Printf("Process %s is already running", processStateChange.Process.Config.String())
+				}
+			}
+		}
+	}
 	return nil
 }
 
-func (c *ProcessState) Start(comment string, consoleMessageChannel *ConsoleMessageChannel) error {
+func (c *ProcessGraphNode) Start(comment string) error {
 	pid, err := c.Process.Start(comment)
 	if err != nil {
 		c.startErr = &err
 		return err
 	}
 
-	if c.Process.Config.WaitAfterStart != "" {
-		duration, err := time.ParseDuration(c.Process.Config.WaitAfterStart)
-		if err != nil {
-			c.startErr = &err
-			return err
-		}
-		*consoleMessageChannel <- &ConsoleMessage{fmt.Sprintf("Waiting %s after start of %s\n", DurationToString(duration), c.Process.Config), nil}
-		time.Sleep(duration)
-	}
-
-	ready, err := c.Process.WaitForReady(pid)
+	ready, err := c.Process.WaitForStartup(pid)
 	if err != nil {
 		c.startErr = &err
 		return err
 	}
 	if !ready {
-		*consoleMessageChannel <- &ConsoleMessage{FailedColor("Unable to start %s\n", c.Process.Config), nil}
-		return nil
+		err = fmt.Errorf("startup timeout")
+		return err
 	}
 	c.started = true
+
 	return nil
 }
 
-func (c *ProcessState) StartAsync(wg *sync.WaitGroup, comment string, consoleMessageChannel *ConsoleMessageChannel) error {
+func (c *ProcessGraphNode) StartAsync(wg *sync.WaitGroup, comment string, processStateChannel *chan *ProcessStateChange) {
 	defer wg.Done()
 	if c.Process.IsRunning() {
 		c.started = true
-		*consoleMessageChannel <- &ConsoleMessage{fmt.Sprintf("Process %s is already running\n", c.Process.Config), c.Process}
-		return nil
+		*processStateChannel <- &ProcessStateChange{StateRunning, nil, c.Process}
+		return
 	}
 	for {
-		started, err := c.IsReadyToStart()
+		ready, err := c.IsReadyToStart()
 		if err != nil {
 			c.startErr = &err
-			return err
+			return
 		}
-		if started {
-			err := c.Start(comment, consoleMessageChannel)
+		if ready {
+			*processStateChannel <- &ProcessStateChange{StateStarting, nil, c.Process}
+			err := c.Start(comment)
 			if err != nil {
-				*consoleMessageChannel <- &ConsoleMessage{FailedColor("Error during starting %s (%s)\n", c.Process.Config, err), nil}
+				*processStateChannel <- &ProcessStateChange{StateStartingError, err, c.Process}
 			} else {
-				*consoleMessageChannel <- &ConsoleMessage{OkColor("Started process %s\n", c.Process.Config), nil}
+				*processStateChannel <- &ProcessStateChange{StateStarted, nil, c.Process}
 			}
-			return err
+			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
