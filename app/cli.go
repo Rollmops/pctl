@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const __version__ = "__VERSION_PLACEHOLDER__"
+
 func CreateCliApp() (*cli.App, error) {
 	filtersFlag := &cli.StringSliceFlag{
 		Name:     "filter",
@@ -90,7 +92,8 @@ func CreateCliApp() (*cli.App, error) {
 				Name:  "version",
 				Usage: "show the version information",
 				Action: func(c *cli.Context) error {
-					return fmt.Errorf("__TO_BE_IMPLEMENTED__")
+					fmt.Printf("pctl %s\n", __version__)
+					return nil
 				},
 			},
 			{

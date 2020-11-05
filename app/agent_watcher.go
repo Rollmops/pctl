@@ -23,7 +23,7 @@ func (w *AgentWatcher) Start() {
 				logrus.Warningf(err.Error())
 			}
 			if !isRunning {
-				logrus.Warningf("Process %s stopped")
+				logrus.Warningf("Process %s stopped", w.processConfig.String())
 			}
 		}
 		time.Sleep(1 * time.Second)

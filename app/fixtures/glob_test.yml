@@ -2,4 +2,4 @@ includes:
 - ${TEST_DATA_DIR}/glob_path/*.yml
 processes:
 - name: from_glob_test_yaml
-  cmd: [sleep, infinity]
+  command: [ sleep, infinity ]

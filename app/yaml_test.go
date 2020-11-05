@@ -41,8 +41,10 @@ func TestLoadConfigGlobIncludes(t *testing.T) {
 	testConfigPath := path.Join(testDataDir, "glob_test.yml")
 	yamlLoader := app.NewYamlLoader()
 
-	_config, _ := yamlLoader.Load(testConfigPath)
-
+	_config, err := yamlLoader.Load(testConfigPath)
+	assert.NoError(t, err)
+	assert.NotNil(t, _config)
+	assert.NotNil(t, _config.ProcessConfigs)
 	if processCount := len(_config.ProcessConfigs); processCount != 3 {
 		t.Fatalf("Expected process count of 3, got %d", processCount)
 	}
