@@ -2,6 +2,5 @@ includes:
   - ${TEST_DATA_DIR}/include.yml
 processes:
   - name: spserver
-    command: [ spserver ]
-    metadata:
-      group: km
+    group: km
+    command: [ sleep, infinity ]

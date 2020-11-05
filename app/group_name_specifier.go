@@ -10,7 +10,7 @@ import (
 var groupNameSpecifierPatternRegex *regexp.Regexp
 
 func init() {
-	groupNameSpecifierPatternRegex = regexp.MustCompile(`([.a-zA-Z0-9_-]*)(:?)([.a-zA-Z0-9_-]*)`)
+	groupNameSpecifierPatternRegex = regexp.MustCompile(`([*.a-zA-Z0-9_-]*)(:?)([*.a-zA-Z0-9_-]*)`)
 }
 
 type GroupNameSpecifier struct {
