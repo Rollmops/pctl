@@ -12,7 +12,7 @@ func init() {
 }
 
 func (*StoppedProperty) Name() string {
-	return "Running"
+	return "Stopped"
 }
 
 func (*StoppedProperty) Value(p *Process, _ bool) (string, error) {

@@ -1,3 +1,7 @@
 processes:
 - name: p1
   command: [ sleep, infinity ]
+  group: g1
+  dependsOn: [ spserver ]
+  metadata:
+    key: value

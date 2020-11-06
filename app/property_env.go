@@ -12,7 +12,7 @@ func init() {
 }
 
 func (*EnvProperty) Name() string {
-	return "Env"
+	return "Environment"
 }
 
 func (*EnvProperty) Value(p *Process, _ bool) (string, error) {
