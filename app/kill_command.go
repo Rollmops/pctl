@@ -2,24 +2,11 @@ package app
 
 import (
 	"fmt"
-	"github.com/Songmu/prompter"
 	"sync"
 	"time"
 )
 
-func KillCommand(names []string, filters Filters) error {
-	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, len(filters) > 0)
-	if err != nil {
-		return err
-	}
-	if len(processes) == 0 {
-		return fmt.Errorf(MsgNoMatchingProcess)
-	}
-
-	if !prompter.YN(fmt.Sprintf("Do you really want to proceed killing?"), false) {
-		return nil
-	}
-
+func KillProcesses(processes []*Process) error {
 	processStateMap, err := NewProcessGraphMap(
 		processes, func(p *Process) []string {
 			return p.Config.DependsOnInverse

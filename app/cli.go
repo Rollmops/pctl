@@ -68,6 +68,7 @@ func CreateCliApp() (*cli.App, error) {
 			if err != nil {
 				logrus.Fatalf(err.Error())
 			}
+			CurrentContext.ProcessController = &RemoteProcessController{}
 			return nil
 		},
 		Name:  "pctl",
@@ -168,9 +169,9 @@ func CreateCliApp() (*cli.App, error) {
 						return err
 					}
 					if c.NArg() == 0 && len(filters) == 0 {
-						return fmt.Errorf("missing process names or filters")
+						return fmt.Errorf("missing process Names or filters")
 					}
-					return StartCommand(c.Args().Slice(), filters, c.String("comment"))
+					return CurrentContext.ProcessController.Start(c.Args().Slice(), filters, c.String("comment"))
 				},
 			},
 			{
@@ -197,10 +198,10 @@ func CreateCliApp() (*cli.App, error) {
 						return err
 					}
 					if c.NArg() == 0 && len(filters) == 0 {
-						return fmt.Errorf("missing process names or filters")
+						return fmt.Errorf("missing process Names or filters")
 					}
 					kill := c.Bool("kill")
-					return RestartCommand(c.Args().Slice(), filters, c.String("comment"), kill)
+					return CurrentContext.ProcessController.Restart(c.Args().Slice(), filters, c.String("comment"), kill)
 				},
 			},
 			{
@@ -224,14 +225,14 @@ func CreateCliApp() (*cli.App, error) {
 						return err
 					}
 					if c.NArg() == 0 && len(filters) == 0 {
-						return fmt.Errorf("missing process names or filters")
+						return fmt.Errorf("missing process Names or filters")
 					}
 					noWait := c.Bool("nowait")
 					kill := c.Bool("kill")
 					if noWait && kill {
 						return fmt.Errorf("unable to combine --nowait and --kill")
 					}
-					return StopCommand(c.Args().Slice(), filters, noWait, kill)
+					return CurrentContext.ProcessController.Stop(c.Args().Slice(), filters, noWait, kill)
 				},
 			},
 			{
@@ -253,15 +254,15 @@ func CreateCliApp() (*cli.App, error) {
 						return err
 					}
 					if c.NArg() == 0 && len(filters) == 0 {
-						return fmt.Errorf("missing process names or filters")
+						return fmt.Errorf("missing process Names or filters")
 					}
-					return KillCommand(c.Args().Slice(), filters)
+					return CurrentContext.ProcessController.Kill(c.Args().Slice(), filters)
 				},
 			},
 			{
 				Name:      "info",
 				Usage:     "show info for all or specified processes",
-				ArgsUsage: "a list of process names - if empty, info of all processes will be shown",
+				ArgsUsage: "a list of process Names - if empty, info of all processes will be shown",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:     "format",
@@ -310,7 +311,7 @@ func CreateCliApp() (*cli.App, error) {
 					columnsString := c.String("columns")
 					columnsString = strings.ReplaceAll(columnsString, "+", "group,name,pid,status")
 					columns := strings.Split(columnsString, ",")
-					return InfoCommand(c.Args().Slice(), format, filters, columns)
+					return CurrentContext.ProcessController.Info(c.Args().Slice(), format, filters, columns)
 				},
 			},
 		},

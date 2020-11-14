@@ -7,10 +7,11 @@ import (
 )
 
 type Context struct {
-	Config       *Config
-	OutputWriter *os.File
-	Processes    ProcessList
-	Cache        Cache
+	Config            *Config
+	OutputWriter      *os.File
+	Processes         ProcessList
+	Cache             Cache
+	ProcessController ProcessController
 }
 
 var CurrentContext *Context

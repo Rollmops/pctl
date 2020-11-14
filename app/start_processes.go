@@ -2,27 +2,9 @@ package app
 
 import (
 	"fmt"
-	"github.com/Songmu/prompter"
 	"sync"
 	"time"
 )
-
-func StartCommand(names []string, filters Filters, comment string) error {
-	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, len(filters) > 0)
-	if err != nil {
-		return err
-	}
-	if len(processes) == 0 {
-		return fmt.Errorf(MsgNoMatchingProcess)
-	}
-
-	if CurrentContext.Config.PromptForStart && !prompter.YN(fmt.Sprintf("Do you really want to start?"), false) {
-		return nil
-	}
-
-	return StartProcesses(processes, comment)
-
-}
 
 func StartProcesses(processes []*Process, comment string) error {
 	processStateMap, err := NewProcessGraphMap(

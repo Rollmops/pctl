@@ -1,10 +1,15 @@
 package app
 
 import (
+	"fmt"
 	"github.com/facebookgo/pidfile"
 	gopsutil "github.com/shirou/gopsutil/process"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"io"
+	"io/ioutil"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -46,6 +51,39 @@ func CheckRunningAgentProcess() error {
 	return nil
 }
 
+type flushWriter struct {
+	f http.Flusher
+	w io.Writer
+}
+
+func (fw *flushWriter) Write(p []byte) (n int, err error) {
+	n, err = fw.w.Write(p)
+	if fw.f != nil {
+		fw.f.Flush()
+	}
+	return
+}
+
+func hello(w http.ResponseWriter, req *http.Request) {
+	fw := flushWriter{w: w}
+	if f, ok := w.(http.Flusher); ok {
+		fw.f = f
+	}
+	bodyReader := req.Body
+	defer bodyReader.Close()
+	var buffer []byte
+
+	buffer, err := ioutil.ReadAll(bodyReader)
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+
+	fmt.Printf("%s\n", string(buffer))
+	fw.Write([]byte("wuff\n"))
+	time.Sleep(2 * time.Second)
+	fw.Write([]byte("waff\n"))
+}
+
 func StartAgent() error {
 	err := CheckRunningAgentProcess()
 	if err != nil {
@@ -57,7 +95,9 @@ func StartAgent() error {
 	}
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGTERM)
+	signal.Notify(c, syscall.SIGINT)
 	signal.Notify(c, syscall.SIGUSR1)
+
 	go StartAgentMain()
 	logrus.Infof("Starting %d watchers", len(CurrentContext.Config.ProcessConfigs))
 	for _, processConfig := range CurrentContext.Config.ProcessConfigs {
@@ -65,10 +105,18 @@ func StartAgent() error {
 		go watcher.Start()
 	}
 
+	go func() {
+		err = startServer()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	for {
 		s := <-c
-		if s == syscall.SIGTERM {
+		if s == syscall.SIGTERM || s == syscall.SIGINT {
 			logrus.Infof("Received TERM signal")
+			os.Remove("/tmp/pctl-agent.sock")
 			os.Exit(0)
 		} else if s == syscall.SIGUSR1 {
 			logrus.Infof("Reloading config")
@@ -78,6 +126,19 @@ func StartAgent() error {
 			}
 		}
 	}
+}
+
+func startServer() error {
+	http.HandleFunc("/pctl", hello)
+	unixListener, err := net.Listen("unix", "/tmp/pctl-agent.sock")
+	if err != nil {
+		return err
+	}
+	err = http.Serve(unixListener, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func StartAgentMain() {

@@ -2,27 +2,9 @@ package app
 
 import (
 	"fmt"
-	"github.com/Songmu/prompter"
 	"sync"
 	"time"
 )
-
-func StopCommand(names []string, filters Filters, noWait bool, kill bool) error {
-	processes, err := CurrentContext.Config.CollectProcessesByNameSpecifiers(names, filters, len(filters) > 0)
-	if err != nil {
-		return err
-	}
-
-	if len(processes) == 0 {
-		return fmt.Errorf(MsgNoMatchingProcess)
-	}
-
-	if CurrentContext.Config.PromptForStop && !prompter.YN(fmt.Sprintf("Do you really want to proceed stopping?"), false) {
-		return nil
-	}
-	_, err = StopProcesses(processes, noWait, kill)
-	return err
-}
 
 func StopProcesses(processes []*Process, noWait bool, kill bool) ([]*Process, error) {
 	processStateMap, err := NewProcessGraphMap(
