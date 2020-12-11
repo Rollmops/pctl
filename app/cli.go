@@ -290,6 +290,12 @@ func CreateCliApp() (*cli.App, error) {
 							return "comma separated list of columns, available: " + strings.Join(columns, ",")
 						}(),
 					},
+					&cli.StringFlag{
+						Name:     "sort",
+						EnvVars:  []string{"PCTL_INFO_SORT_COLUMNS"},
+						Required: false,
+						Usage:    "comma separated list of the columns to sort",
+					},
 					filtersFlag,
 					runningFlag,
 					stoppedFlag,
@@ -310,7 +316,8 @@ func CreateCliApp() (*cli.App, error) {
 					columnsString := c.String("columns")
 					columnsString = strings.ReplaceAll(columnsString, "+", "group,name,pid,status")
 					columns := strings.Split(columnsString, ",")
-					return InfoCommand(c.Args().Slice(), format, filters, columns)
+					sortColumns := strings.Split(c.String("sort"), ",")
+					return InfoCommand(c.Args().Slice(), format, filters, columns, sortColumns)
 				},
 			},
 		},

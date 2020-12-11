@@ -18,6 +18,6 @@ type StatusReturn struct {
 }
 
 type Output interface {
-	Write(list ProcessList, columnIds []string) error
+	Write(list ProcessList, columnIds []string, sortColumns []string) error
 	SetWriter(file *os.File)
 }

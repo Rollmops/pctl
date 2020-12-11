@@ -59,7 +59,7 @@ func (j *JsonConsoleOutput) SetWriter(writer *os.File) {
 	j.writer = writer
 }
 
-func (j *JsonConsoleOutput) Write(processes ProcessList, _ []string) error {
+func (j *JsonConsoleOutput) Write(processes ProcessList, _ []string, _ []string) error {
 	var jsonInfoEntries []*JsonInfoEntry
 
 	for _, p := range processes {

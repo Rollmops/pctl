@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func InfoCommand(names []string, format string, filters Filters, columns []string) error {
+func InfoCommand(names []string, format string, filters Filters, columns []string, sortColumns []string) error {
 	o := FormatMap[format]
 	if o == nil {
 		return fmt.Errorf("unknown format: %s", format)
@@ -17,5 +17,5 @@ func InfoCommand(names []string, format string, filters Filters, columns []strin
 	if len(processes) == 0 {
 		return fmt.Errorf(MsgNoMatchingProcess)
 	}
-	return o.Write(processes, columns)
+	return o.Write(processes, columns, sortColumns)
 }

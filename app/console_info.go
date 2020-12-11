@@ -6,6 +6,7 @@ import (
 	"github.com/jedib0t/go-pretty/text"
 	"io"
 	"os"
+	"strings"
 )
 
 func init() {
@@ -37,7 +38,7 @@ func (o *DefaultConsoleOutput) SetWriter(writer *os.File) {
 	o.Writer = writer
 }
 
-func (o *DefaultConsoleOutput) Write(processes ProcessList, columnIds []string) error {
+func (o *DefaultConsoleOutput) Write(processes ProcessList, columnIds []string, sortColumns []string) error {
 	tw := table.NewWriter()
 	tw.SetStyle(o.Style)
 	tw.Style().Format.Header = text.FormatTitle
@@ -77,6 +78,19 @@ func (o *DefaultConsoleOutput) Write(processes ProcessList, columnIds []string) 
 		}
 		tw.AppendRow(row)
 	}
+	tw.SortBy(_createSortBySlice(sortColumns, columnIds))
 	_, err := o.Writer.Write([]byte(tw.Render() + "\n"))
 	return err
+}
+
+func _createSortBySlice(sortColumns []string, columnIds []string) []table.SortBy {
+	var sortBySlice []table.SortBy
+	for _, sortColumn := range sortColumns {
+		for i, columnId := range columnIds {
+			if strings.ToLower(columnId) == strings.ToLower(sortColumn) {
+				sortBySlice = append(sortBySlice, table.SortBy{Number: i + 1})
+			}
+		}
+	}
+	return sortBySlice
 }
