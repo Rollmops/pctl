@@ -43,7 +43,6 @@ type ProcessConfig struct {
 type Config struct {
 	PromptForStop  bool                                `yaml:"promptForStop"`
 	PromptForStart bool                                `yaml:"promptForStart"`
-	Agent          *AgentConfig                        `yaml:"agent"`
 	ProcessConfigs []*ProcessConfig                    `yaml:"processes"`
 	Groups         map[string]*AdditionalProcessConfig `yaml:"groups"`
 }

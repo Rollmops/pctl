@@ -25,7 +25,6 @@ USAGE:
 
 COMMANDS:
    version  show the version information
-   agent    pctl agent command group
    start    start process(es)
    restart  restart process(es)
    stop     stop process(es)

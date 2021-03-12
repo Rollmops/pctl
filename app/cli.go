@@ -96,55 +96,7 @@ func CreateCliApp() (*cli.App, error) {
 					return nil
 				},
 			},
-			{
-				Name:  "agent",
-				Usage: "pctl agent command group",
-				Subcommands: []*cli.Command{
-					{
-						Name:  "start",
-						Usage: "start the pctl agent",
-						Flags: []cli.Flag{
-							&cli.BoolFlag{
-								Name:    "detach",
-								Usage:   "detach mode - run the agent in the background",
-								Aliases: []string{"d"},
-								EnvVars: []string{"PCTL_AGENT_DETACH"},
-							},
-						},
-						Action: func(c *cli.Context) error {
-							return AgentStartCommand(c.Bool("detach"))
-						},
-					},
-					{
-						Name:  "stop",
-						Usage: "stop the pctl agent",
-						Action: func(c *cli.Context) error {
-							return AgentStopCommand()
-						},
-					},
-					{
-						Name:  "reload",
-						Usage: "reload the configuration",
-						Action: func(c *cli.Context) error {
-							return AgentReloadCommand()
-						},
-					},
-					{
-						Name:  "status",
-						Usage: "prints the agent status",
-						Flags: []cli.Flag{
-							&cli.BoolFlag{
-								Name:    "derive-exit-code",
-								Aliases: []string{"e"},
-								Usage:   "set exit code to 1 if agent is not running",
-							},
-						},
-						Action: func(c *cli.Context) error {
-							return AgentStatusCommand(c.Bool("derive-exit-code"))
-						},
-					},
-				},
-			},
+
 			{
 				Name:      "start",
 				Usage:     "start process(es)",

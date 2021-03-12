@@ -56,7 +56,7 @@ func StartProcesses(processes []*Process, comment string) error {
 		case StateRunning:
 			for _, process := range processes {
 				if process.Config.String() == processStateChange.Process.Config.String() {
-					fmt.Printf("Process %s is already running", processStateChange.Process.Config.String())
+					fmt.Printf("Process %s is already running\n", processStateChange.Process.Config.String())
 				}
 			}
 		}
