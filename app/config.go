@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"github.com/stevenle/topsort"
 	"github.com/yourbasic/graph"
 	"os"
 	"path"
@@ -21,17 +22,16 @@ type CoreProcessConfig struct {
 	Name    string   `yaml:"name"`
 	Group   string   `yaml:"group"`
 	Command []string `yaml:"command"`
+	Traits  []string `yaml:"traits"`
 }
 
 type AdditionalProcessConfig struct {
-	DependsOn        []string `yaml:"dependsOn"`
-	DependsOnInverse []string
-	Metadata         map[string]string `yaml:"metadata"`
-	Stop             *StopConfig       `yaml:"stop"`
-	StartupProbe     *Probe            `yaml:"startupProbe"`
-	LivenessProbe    *Probe            `yaml:"livenessProbe"`
-	Env              map[string]string `yaml:"env"`
-	Disabled         bool              `yaml:"disabled"`
+	DependsOn    []string          `yaml:"dependsOn"`
+	Metadata     map[string]string `yaml:"metadata"`
+	Stop         *StopConfig       `yaml:"stop"`
+	StartupProbe *Probe            `yaml:"startupProbe"`
+	Env          map[string]string `yaml:"env"`
+	Disabled     bool              `yaml:"disabled"`
 }
 
 type ProcessConfig struct {
@@ -44,18 +44,16 @@ type Config struct {
 	PromptForStop  bool                                `yaml:"promptForStop"`
 	PromptForStart bool                                `yaml:"promptForStart"`
 	ProcessConfigs []*ProcessConfig                    `yaml:"processes"`
-	Groups         map[string]*AdditionalProcessConfig `yaml:"groups"`
+	Traits         map[string]*AdditionalProcessConfig `yaml:"traits"`
 }
 
 func (c *Config) Initialize() error {
 	c.expandVars()
-	c.mergeGroupConfig()
-
-	err := c.validateAcyclicDependencies()
+	err := c.mergeTraitsConfig()
 	if err != nil {
 		return err
 	}
-	return c.fillDependsOnInverse()
+	return c.validateAcyclicDependencies()
 }
 
 func (c *ProcessConfig) String() string {
@@ -109,9 +107,9 @@ func (c *Config) CollectProcessesByNameSpecifiers(nameSpecifiers []string, filte
 		}
 		for _, processConfig := range c.ProcessConfigs {
 			if groupNameSpecifier.IsMatchingGroupAndName(processConfig.Group, processConfig.Name) && !_isInProcessList(processConfig.Name, returnProcesses) {
-				p, err := CurrentContext.GetProcessByConfig(processConfig)
-				if err != nil {
-					return nil, err
+				p := CurrentContext.GetProcessByConfig(processConfig)
+				if p == nil {
+					return nil, fmt.Errorf("unable to find process config %v", processConfig)
 				}
 				returnProcesses = append(returnProcesses, p)
 			}
@@ -119,6 +117,31 @@ func (c *Config) CollectProcessesByNameSpecifiers(nameSpecifiers []string, filte
 	}
 	logrus.Tracef("Found %d process configs for name specifiers: %v", len(returnProcesses), nameSpecifiers)
 	return getFilteredProcesses(returnProcesses, filters)
+}
+
+func (c *Config) GetDependencyGraph(reverse bool) (*topsort.Graph, error) {
+	dependencyTree := topsort.NewGraph()
+	for _, processConfig := range c.ProcessConfigs {
+		dependencyTree.AddNode(processConfig.String())
+		for _, dependencySpecifier := range processConfig.DependsOn {
+			dependencyConfigs, err := c.FindByGroupNameSpecifier(dependencySpecifier)
+			if err != nil {
+				return nil, err
+			}
+			for _, dependencyConfig := range dependencyConfigs {
+				dependencyTree.AddNode(dependencyConfig.String())
+				if !reverse {
+					err = dependencyTree.AddEdge(processConfig.String(), dependencyConfig.String())
+				} else {
+					err = dependencyTree.AddEdge(dependencyConfig.String(), processConfig.String())
+				}
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+	return dependencyTree, nil
 }
 
 func getFilteredProcesses(processes ProcessList, filters Filters) ([]*Process, error) {
@@ -142,26 +165,6 @@ func getFilteredProcesses(processes ProcessList, filters Filters) ([]*Process, e
 		return filteredProcesses, nil
 	}
 	return processes, nil
-}
-
-func (c *Config) fillDependsOnInverse() error {
-	for _, pConfig := range c.ProcessConfigs {
-		for _, dependsOn := range pConfig.DependsOn {
-			dependencyConfigs, err := c.FindByGroupNameSpecifier(dependsOn)
-			if err != nil {
-				return err
-			}
-			if dependencyConfigs == nil {
-				return fmt.Errorf("unable to find process config matching %s", dependsOn)
-			}
-			for _, dependencyConfig := range dependencyConfigs {
-				if !IsInStringList(dependencyConfig.DependsOnInverse, pConfig.Name) {
-					dependencyConfig.DependsOnInverse = append(dependencyConfig.DependsOnInverse, pConfig.Name)
-				}
-			}
-		}
-	}
-	return nil
 }
 
 func _isInProcessList(name string, processes ProcessList) bool {
@@ -216,29 +219,30 @@ func (c *Config) validateAcyclicDependencies() error {
 	return nil
 }
 
-func (c *Config) mergeGroupConfig() {
+func (c *Config) mergeTraitsConfig() error {
 	for _, processConfig := range c.ProcessConfigs {
-		groupConfig := c.Groups[processConfig.Group]
-		if groupConfig != nil {
-			processConfig.Env = MergeStringMap(groupConfig.Env, processConfig.Env)
-			processConfig.Metadata = MergeStringMap(groupConfig.Metadata, processConfig.Metadata)
+		for _, trait := range processConfig.Traits {
+			traitConfig := c.Traits[trait]
+			if traitConfig == nil {
+				return fmt.Errorf("unable to find trait '%s' for process '%s'", trait, processConfig.Name)
+			}
+			processConfig.Env = MergeStringMap(traitConfig.Env, processConfig.Env)
+			processConfig.Metadata = MergeStringMap(traitConfig.Metadata, processConfig.Metadata)
 			if processConfig.Stop == nil {
-				processConfig.Stop = groupConfig.Stop
+				processConfig.Stop = traitConfig.Stop
 			}
 			if len(processConfig.DependsOn) == 0 {
-				processConfig.DependsOn = groupConfig.DependsOn
+				processConfig.DependsOn = traitConfig.DependsOn
 			}
 			if !processConfig.Disabled {
-				processConfig.Disabled = groupConfig.Disabled
+				processConfig.Disabled = traitConfig.Disabled
 			}
 			if processConfig.StartupProbe == nil {
-				processConfig.StartupProbe = groupConfig.StartupProbe
-			}
-			if processConfig.LivenessProbe == nil {
-				processConfig.LivenessProbe = groupConfig.LivenessProbe
+				processConfig.StartupProbe = traitConfig.StartupProbe
 			}
 		}
 	}
+	return nil
 }
 
 func (c *Config) expandVars() {

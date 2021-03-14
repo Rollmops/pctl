@@ -49,7 +49,7 @@ func (l *ProcessList) SyncRunningInfo() error {
 }
 
 func (p *Process) IsRunning() bool {
-	if p.RunningInfo != nil {
+	if p.RunningInfo != nil && p.RunningInfo.GopsutilProcess != nil {
 		isRunning, err := p.RunningInfo.GopsutilProcess.IsRunning()
 		if err != nil || !isRunning {
 			return false
@@ -60,14 +60,14 @@ func (p *Process) IsRunning() bool {
 	return false
 }
 
-func (p *Process) Start(comment string) (int32, error) {
+func (p *Process) Start(comment string) (*exec.Cmd, error) {
 	runningInfoStr, err := createRunningInfoJson(comment, p)
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
-	infoEnv := fmt.Sprintf("__PCTL_INFO__=%s", runningInfoStr)
+	infoEnv := fmt.Sprintf("%s=%s", PctlInfoMarker, runningInfoStr)
 
-	cmd := exec.Command("setsid", p.Config.Command...)
+	cmd := exec.Command(p.Config.Command[0], p.Config.Command[1:]...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, infoEnv)
 
@@ -75,18 +75,13 @@ func (p *Process) Start(comment string) (int32, error) {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
 	err = cmd.Start()
-	return int32(cmd.Process.Pid), err
+	return cmd, err
 }
 
-func (p *Process) WaitForStartup(pid int32) (bool, error) {
+func (p *Process) WaitForStartup(cmd *exec.Cmd) (bool, error) {
 	startupProbe := p.Config.StartupProbe
 	if startupProbe != nil {
-		if p.RunningInfo == nil {
-			p.RunningInfo = &RunningInfo{Pid: pid}
-		} else {
-			p.RunningInfo.Pid = pid
-		}
-		return startupProbe.Probe(p, 100*time.Millisecond)
+		return startupProbe.Probe(p, cmd, 100*time.Millisecond)
 	}
 	return true, nil
 }

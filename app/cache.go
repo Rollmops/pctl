@@ -5,16 +5,18 @@ import (
 	"fmt"
 	gopsutil "github.com/shirou/gopsutil/process"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
-	"path"
+	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
+
+var PctlInfoMarker = "__PCTL_INFO__"
 
 type Cache struct {
 	runningInfoList []*RunningInfo
+	runningInfoMap  map[int32]*RunningInfo
 }
 
 type RefreshResult struct {
@@ -26,13 +28,56 @@ type RefreshChannelType chan *RefreshResult
 
 func (c *Cache) refreshForPid(pid int32, channel RefreshChannelType, wg *sync.WaitGroup) {
 	defer wg.Done()
-	runningInfo, err := FindTopProcessRunningInfo(pid)
+	runningInfo, err := c.findTopProcessRunningInfo(pid)
 	channel <- &RefreshResult{runningInfo, err}
+}
+
+func (c *Cache) collectRunningInfo() error {
+	r := regexp.MustCompile(PctlInfoMarker + `=(\{.+\})`)
+	c.runningInfoMap = make(map[int32]*RunningInfo)
+	out, err := exec.Command("ps", "e", "-ww").Output()
+	if err != nil {
+		return err
+	}
+	entries := strings.Split(string(out), "\n")
+	for _, entry := range entries {
+		entry = strings.Trim(entry, " ")
+
+		if strings.Contains(entry, PctlInfoMarker) {
+			pid, err := strconv.Atoi(strings.Split(entry, " ")[0])
+			if err != nil {
+				return err
+			}
+			match := r.FindStringSubmatch(entry)
+			if match == nil || len(match) != 2 {
+				return fmt.Errorf("unable to find match in %s", entry)
+			}
+			var runningInfo RunningInfo
+			err = json.Unmarshal([]byte(match[1]), &runningInfo)
+			if err != nil {
+				return err
+			}
+			processConfig := CurrentContext.Config.FindByGroupAndName(runningInfo.Config.Group, runningInfo.Config.Name)
+			if processConfig == nil {
+				return fmt.Errorf("unable to find running process %s with PID %d in config", runningInfo.Config.String(), pid)
+			}
+			runningInfo.Pid = int32(pid)
+			err = runningInfo.SetDirty(processConfig)
+			if err != nil {
+				return err
+			}
+			c.runningInfoMap[int32(pid)] = &runningInfo
+		}
+	}
+	return nil
 }
 
 func (c *Cache) Refresh() error {
 	logrus.Debug("Start refreshing cache")
-	start := time.Now()
+	err := c.collectRunningInfo()
+	if err != nil {
+		return err
+	}
 	c.runningInfoList = make([]*RunningInfo, 0)
 	processIds, err := gopsutil.Pids()
 	if err != nil {
@@ -41,7 +86,7 @@ func (c *Cache) Refresh() error {
 	logrus.Tracef("Found %d running PIDs", len(processIds))
 	wg := sync.WaitGroup{}
 	wg.Add(len(processIds))
-	refreshResultChannel := make(chan *RefreshResult, len(CurrentContext.Config.ProcessConfigs))
+	refreshResultChannel := make(chan *RefreshResult)
 	go func() {
 		wg.Wait()
 		close(refreshResultChannel)
@@ -51,14 +96,12 @@ func (c *Cache) Refresh() error {
 	}
 	for refreshChannelReturn := range refreshResultChannel {
 		if refreshChannelReturn.err != nil {
-			err = refreshChannelReturn.err
+			return refreshChannelReturn.err
 		}
 		if refreshChannelReturn.runningInfo != nil {
 			c.runningInfoList = append(c.runningInfoList, refreshChannelReturn.runningInfo)
 		}
 	}
-	elapsed := time.Since(start)
-	logrus.Debugf("Refreshing cache took %s", elapsed)
 	return err
 }
 
@@ -88,15 +131,11 @@ func collectDirtyHashes(command *[]string, runningInfo *RunningInfo) ([]string, 
 	return returnDirtyHashes, nil
 }
 
-func FindTopProcessRunningInfo(pid int32) (*RunningInfo, error) {
-	runningInfo, err := FindRunningEnvironInfoFromPid(pid)
-	if err != nil {
-		return nil, err
-	}
+func (c *Cache) findTopProcessRunningInfo(pid int32) (*RunningInfo, error) {
+	runningInfo := c.runningInfoMap[pid]
 	if runningInfo == nil {
 		return nil, nil
 	}
-
 	gopsutilProcess, err := gopsutil.NewProcess(pid)
 	if err != nil {
 		// do not return the error here since the pid might have been gone already
@@ -106,7 +145,7 @@ func FindTopProcessRunningInfo(pid int32) (*RunningInfo, error) {
 	if ppid == -1 {
 		return runningInfo, nil
 	}
-	runningInfoFromParent, err := FindTopProcessRunningInfo(ppid)
+	runningInfoFromParent, err := c.findTopProcessRunningInfo(ppid)
 	if err != nil {
 		return nil, err
 	}
@@ -117,39 +156,6 @@ func FindTopProcessRunningInfo(pid int32) (*RunningInfo, error) {
 	runningInfo.GopsutilProcess = gopsutilProcess
 	runningInfo.DirtyInfo.DirtyMd5Hashes, _ = collectDirtyHashes(&runningInfo.Config.Command, runningInfo)
 	return runningInfo, nil
-}
-
-func FindRunningEnvironInfoFromPid(pid int32) (*RunningInfo, error) {
-	envString := getProcessEnvironVariable(pid, "__PCTL_INFO__")
-	if envString != "" {
-		envJson := strings.SplitN(envString, "=", 2)[1]
-		var runningInfo RunningInfo
-		err := json.Unmarshal([]byte(envJson), &runningInfo)
-		if err != nil {
-			return nil, err
-		}
-		processConfig := CurrentContext.Config.FindByGroupAndName(runningInfo.Config.Group, runningInfo.Config.Name)
-		if processConfig == nil {
-			return nil, fmt.Errorf("unable to find running process %s with PID %d in config", runningInfo.Config.String(), pid)
-		}
-		runningInfo.Pid = pid
-		return &runningInfo, runningInfo.SetDirty(processConfig)
-	}
-	return nil, nil
-}
-
-func getProcessEnvironVariable(pid int32, name string) string {
-	envFilePath := path.Join("/", "proc", strconv.Itoa(int(pid)), "environ")
-	envContent, err := ioutil.ReadFile(envFilePath)
-	if err == nil {
-		envStrings := strings.Split(string(envContent), "\000")
-		for _, envString := range envStrings {
-			if strings.HasPrefix(envString, name) {
-				return envString
-			}
-		}
-	}
-	return ""
 }
 
 func createRunningInfoJson(comment string, p *Process) (string, error) {

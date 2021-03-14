@@ -3,8 +3,8 @@ package app
 import (
 	"fmt"
 	"github.com/Songmu/prompter"
-	"sync"
-	"time"
+	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 func StopCommand(names []string, filters Filters, noWait bool, kill bool) error {
@@ -17,6 +17,11 @@ func StopCommand(names []string, filters Filters, noWait bool, kill bool) error 
 		return fmt.Errorf(MsgNoMatchingProcess)
 	}
 
+	processes, err = AddDependencyProcesses(processes, true)
+	if err != nil {
+		return err
+	}
+
 	if CurrentContext.Config.PromptForStop && !prompter.YN(fmt.Sprintf("Do you really want to proceed stopping?"), false) {
 		return nil
 	}
@@ -25,108 +30,56 @@ func StopCommand(names []string, filters Filters, noWait bool, kill bool) error 
 }
 
 func StopProcesses(processes []*Process, noWait bool, kill bool) ([]*Process, error) {
-	processStateMap, err := NewProcessGraphMap(
-		processes, func(p *Process) []string {
-			return p.Config.DependsOnInverse
-		})
-	if err != nil {
-		return nil, err
-	}
-
-	var wg sync.WaitGroup
-
-	processStatusChannel := make(chan *ProcessStateChange)
-	wg.Add(len(*processStateMap))
-
-	go func() {
-		wg.Wait()
-		close(processStatusChannel)
-	}()
-
-	for _, processState := range *processStateMap {
-		go processState.StopAsync(noWait, kill, &wg, &processStatusChannel)
-	}
+	var failedProcessStops []string
 	var stoppedProcesses []*Process
 
-	for processChange := range processStatusChannel {
-		switch processChange.State {
-		case StateStopped:
-			stoppedProcesses = append(stoppedProcesses, processChange.Process)
-			fmt.Printf(OkColor("Stopped process %s\n", processChange.Process.Config.String()))
-		case StateStoppingError:
-			fmt.Printf(FailedColor("Error during process stop of %s (%s)\n", processChange.Process.Config.String(), processChange.Error.Error()))
-		case StateDependencyStoppingError:
-			fmt.Printf(WarningColor("Will not stop %s\n", processChange.Process.Config.String()))
-		case StateKilled:
-			stoppedProcesses = append(stoppedProcesses, processChange.Process)
-			fmt.Printf(WarningColor("Killed process %s\n", processChange.Process.Config.String()))
+	for _, process := range processes {
+		processName := process.Config.String()
+		if process.IsRunning() {
+			fmt.Printf("Stopping %s...", processName)
+			err := StopProcess(process, noWait, kill)
+			if err != nil {
+				failedProcessStops = append(failedProcessStops, processName)
+				fmt.Printf(FailedColor("Failed (%s)\n", err.Error()))
+			} else {
+				stoppedProcesses = append(stoppedProcesses, process)
+				fmt.Printf(OkColor("Ok\n"))
+			}
+		} else {
+			logrus.Debugf("Process '%s' is not running", processName)
 		}
 	}
 
+	if len(failedProcessStops) > 0 {
+		return stoppedProcesses, fmt.Errorf("failed to stop: %s", strings.Join(failedProcessStops, ","))
+	}
 	return stoppedProcesses, nil
 }
 
-func (c *ProcessGraphNode) Stop(noWait bool, kill bool, processStatusChannel *chan *ProcessStateChange) error {
-	*processStatusChannel <- &ProcessStateChange{StateStopping, nil, c.Process}
-	err := c.Process.Stop()
+func StopProcess(process *Process, noWait bool, kill bool) error {
+	processName := process.Config.String()
+	logrus.Debugf("Stopping process %s", processName)
+	err := process.Stop()
 	if err != nil {
-		c.stopErr = &err
-		*processStatusChannel <- &ProcessStateChange{StateStoppingError, err, c.Process}
 		return err
 	}
 	if noWait {
-		*processStatusChannel <- &ProcessStateChange{StateStopped, nil, c.Process}
-		c.stopped = true
 		return nil
 	}
-	stopped, err := c.Process.WaitForStop()
+	stopped, err := process.WaitForStop()
 	if err != nil {
-		c.stopErr = &err
-		*processStatusChannel <- &ProcessStateChange{StateStoppingError, err, c.Process}
 		return err
 	}
 	if stopped {
-		*processStatusChannel <- &ProcessStateChange{StateStopped, nil, c.Process}
-		c.stopped = true
 		return nil
 	}
 	if kill {
-		*processStatusChannel <- &ProcessStateChange{StateKilling, nil, c.Process}
-		err := c.Process.Kill()
+		err := process.Kill()
 		if err != nil {
-			c.stopErr = &err
-			*processStatusChannel <- &ProcessStateChange{StateKillingError, err, c.Process}
 			return err
 		}
-		*processStatusChannel <- &ProcessStateChange{StateKilled, nil, c.Process}
-		c.stopped = true
 		return nil
 	}
 	err = fmt.Errorf("timeout")
-	*processStatusChannel <- &ProcessStateChange{StateStoppingError, err, c.Process}
-	c.stopErr = &err
 	return err
-}
-
-func (c *ProcessGraphNode) StopAsync(noWait bool, kill bool, wg *sync.WaitGroup, processStatusChannel *chan *ProcessStateChange) {
-	defer wg.Done()
-	if !c.Process.IsRunning() {
-		*processStatusChannel <- &ProcessStateChange{StateNotRunning, nil, c.Process}
-		c.stopped = true
-		return
-	}
-	for {
-		readyToStop, err := c.IsReadyToStop()
-
-		if err != nil {
-			*processStatusChannel <- &ProcessStateChange{StateDependencyStoppingError, nil, c.Process}
-			c.stopErr = &err
-			return
-		}
-		if readyToStop {
-			_ = c.Stop(noWait, kill, processStatusChannel)
-			return
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
 }

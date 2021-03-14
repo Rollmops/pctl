@@ -1,6 +1,7 @@
 package app
 
 import (
+	"os/exec"
 	"time"
 )
 
@@ -36,7 +37,7 @@ func (c *Probe) GetInitialDelay() (time.Duration, error) {
 	return time.ParseDuration(c.InitialDelay)
 }
 
-func (c *Probe) Probe(process *Process, defaultPeriod time.Duration) (bool, error) {
+func (c *Probe) Probe(process *Process, cmd *exec.Cmd, defaultPeriod time.Duration) (bool, error) {
 	period, err := c.GetPeriod(defaultPeriod)
 	if err != nil {
 		return false, err
@@ -51,7 +52,7 @@ func (c *Probe) Probe(process *Process, defaultPeriod time.Duration) (bool, erro
 	if c.SuccessThreshold == 0 {
 		c.SuccessThreshold = 1
 	}
-	var probeImplFunc func(*Process, *Probe) (bool, error)
+	var probeImplFunc func(*Process, *exec.Cmd, *Probe) (bool, error)
 	if c.Exec != nil {
 		probeImplFunc = c.Exec.Probe
 	} else if c.HttpGet != nil {
@@ -66,7 +67,7 @@ func (c *Probe) Probe(process *Process, defaultPeriod time.Duration) (bool, erro
 	failureCount := 0
 	time.Sleep(initialDelay)
 	for {
-		ok, err := probeImplFunc(process, c)
+		ok, err := probeImplFunc(process, cmd, c)
 		if err != nil || !ok {
 			failureCount++
 			if failureCount >= c.FailureThreshold {
@@ -84,6 +85,6 @@ func (c *Probe) Probe(process *Process, defaultPeriod time.Duration) (bool, erro
 
 type NullProbe struct{}
 
-func (p *NullProbe) Probe(_ *Process, _ *Probe) (bool, error) {
-	return true, nil
+func (p *NullProbe) Probe(_ *Process, cmd *exec.Cmd, _ *Probe) (bool, error) {
+	return true, cmd.Wait()
 }

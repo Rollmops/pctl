@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"os"
 )
@@ -22,13 +21,13 @@ func init() {
 	SuffixConfigLoaderMap["yml"] = yamlLoader
 }
 
-func (c *Context) GetProcessByConfig(processConfig *ProcessConfig) (*Process, error) {
+func (c *Context) GetProcessByConfig(processConfig *ProcessConfig) *Process {
 	for _, p := range c.Processes {
 		if p.Config.Name == processConfig.Name && p.Config.Group == processConfig.Group {
-			return p, nil
+			return p
 		}
 	}
-	return nil, fmt.Errorf("unable to find process for config '%v'", processConfig)
+	return nil
 }
 
 func (c *Context) InitializeRunningProcessInfo() error {

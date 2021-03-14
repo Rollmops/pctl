@@ -3,8 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/Songmu/prompter"
-	"sync"
-	"time"
+	"strings"
 )
 
 func StartCommand(names []string, filters Filters, comment string) error {
@@ -16,98 +15,76 @@ func StartCommand(names []string, filters Filters, comment string) error {
 		return fmt.Errorf(MsgNoMatchingProcess)
 	}
 
+	processes, err = AddDependencyProcesses(processes, false)
+	if err != nil {
+		return err
+	}
+
 	if CurrentContext.Config.PromptForStart && !prompter.YN(fmt.Sprintf("Do you really want to start?"), false) {
 		return nil
 	}
 
 	return StartProcesses(processes, comment)
+}
 
+func AddDependencyProcesses(processes ProcessList, reverse bool) (ProcessList, error) {
+	dependencyTree, err := CurrentContext.Config.GetDependencyGraph(reverse)
+	if err != nil {
+		return nil, err
+	}
+	var allTopSortNames []string
+	for _, process := range processes {
+		if IsInStringList(allTopSortNames, process.Config.String()) {
+			continue
+		}
+		topSortNames, err := dependencyTree.TopSort(process.Config.String())
+		if err != nil {
+			return nil, err
+		}
+		for _, topSortName := range topSortNames {
+			if !IsInStringList(allTopSortNames, topSortName) {
+				allTopSortNames = append(allTopSortNames, topSortName)
+			}
+		}
+	}
+	return CurrentContext.Config.CollectProcessesByNameSpecifiers(allTopSortNames, Filters{}, false)
 }
 
 func StartProcesses(processes []*Process, comment string) error {
-	processStateMap, err := NewProcessGraphMap(
-		processes, func(p *Process) []string {
-			return p.Config.DependsOn
-		})
-	if err != nil {
-		return err
-	}
+	var failedProcessStarts []string
 
-	var wg sync.WaitGroup
-
-	processStatusChannel := make(chan *ProcessStateChange)
-	wg.Add(len(*processStateMap))
-
-	go func() {
-		wg.Wait()
-		close(processStatusChannel)
-	}()
-
-	for _, processState := range *processStateMap {
-		go processState.StartAsync(&wg, comment, &processStatusChannel)
-	}
-
-	for processStateChange := range processStatusChannel {
-		switch processStateChange.State {
-		case StateStarted:
-			fmt.Printf(OkColor("Started process %s\n", processStateChange.Process.Config.String()))
-		case StateStartingError:
-			fmt.Printf(FailedColor("Error during process start of %s (%s)\n", processStateChange.Process.Config.String(), processStateChange.Error.Error()))
-		case StateRunning:
-			for _, process := range processes {
-				if process.Config.String() == processStateChange.Process.Config.String() {
-					fmt.Printf("Process %s is already running\n", processStateChange.Process.Config.String())
-				}
+	for _, process := range processes {
+		processName := process.Config.String()
+		if !process.IsRunning() {
+			fmt.Printf("Starting %s...", processName)
+			err := StartProcess(process, comment)
+			if err != nil {
+				failedProcessStarts = append(failedProcessStarts, processName)
+				fmt.Printf(FailedColor("Failed (%s)\n", err.Error()))
+			} else {
+				fmt.Printf(OkColor("Ok\n"))
 			}
 		}
+	}
+	if len(failedProcessStarts) > 0 {
+		return fmt.Errorf("failed to start: %s", strings.Join(failedProcessStarts, ","))
 	}
 	return nil
 }
 
-func (c *ProcessGraphNode) Start(comment string) error {
-	pid, err := c.Process.Start(comment)
+func StartProcess(process *Process, comment string) error {
+	pid, err := process.Start(comment)
 	if err != nil {
-		c.startErr = &err
 		return err
 	}
 
-	ready, err := c.Process.WaitForStartup(pid)
+	ready, err := process.WaitForStartup(pid)
 	if err != nil {
-		c.startErr = &err
 		return err
 	}
 	if !ready {
 		err = fmt.Errorf("startup timeout")
 		return err
 	}
-	c.started = true
-
 	return nil
-}
-
-func (c *ProcessGraphNode) StartAsync(wg *sync.WaitGroup, comment string, processStateChannel *chan *ProcessStateChange) {
-	defer wg.Done()
-	if c.Process.IsRunning() {
-		c.started = true
-		*processStateChannel <- &ProcessStateChange{StateRunning, nil, c.Process}
-		return
-	}
-	for {
-		ready, err := c.IsReadyToStart()
-		if err != nil {
-			c.startErr = &err
-			return
-		}
-		if ready {
-			*processStateChannel <- &ProcessStateChange{StateStarting, nil, c.Process}
-			err := c.Start(comment)
-			if err != nil {
-				*processStateChannel <- &ProcessStateChange{StateStartingError, err, c.Process}
-			} else {
-				*processStateChannel <- &ProcessStateChange{StateStarted, nil, c.Process}
-			}
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
 }

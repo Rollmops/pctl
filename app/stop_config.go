@@ -25,7 +25,7 @@ func (c *StopConfig) GetTimeout() (time.Duration, error) {
 
 func (c *StopConfig) GetInterval() (time.Duration, error) {
 	if c.Period == "" {
-		return 100 * time.Millisecond, nil
+		return 10 * time.Millisecond, nil
 	}
 	return time.ParseDuration(c.Period)
 }

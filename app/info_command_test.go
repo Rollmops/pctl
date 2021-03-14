@@ -10,7 +10,7 @@ func TestInfoCommand(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
 
 	infoOutput := test.CaptureStdout(func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "info"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "info"}))
 	})
 
 	expectedOutput := `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -29,7 +29,7 @@ func TestInfoCommandStopped(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
 
 	infoOutput := test.CaptureStdout(func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "info", "--stopped"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "info", "--stopped"}))
 	})
 
 	expectedOutput := `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -46,7 +46,7 @@ func TestInfoCommandStopped(t *testing.T) {
 
 func TestInfoCommandRunning(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
-	err := Run([]string{"pctl", "--no-color", "info", "--running"})
+	err := Run([]string{"pctl", "--no-color", "--context", "TEST", "info", "--running"})
 	assert.EqualError(t, err, "no matching processes found")
 }
 
@@ -54,7 +54,7 @@ func TestInfoCommandGroupSpecifier(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
 
 	infoOutput := test.CaptureStdout(func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "info", "km:"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "info", "km:"}))
 	})
 
 	expectedOutput := `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -72,7 +72,7 @@ func TestInfoCommandAllSpecifier(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
 
 	infoOutput := test.CaptureStdout(func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "info", ":"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "info", ":"}))
 	})
 
 	expectedOutput := `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -91,7 +91,7 @@ func TestInfoCommandWildcardGroupSpecifier(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
 
 	infoOutput := test.CaptureStdout(func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "info", "k*:"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "info", "k*:"}))
 	})
 
 	expectedOutput := `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -109,7 +109,7 @@ func TestInfoCommandWildcardNameSpecifier(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
 
 	infoOutput := test.CaptureStdout(func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "info", "p*"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "info", "p*"}))
 	})
 
 	expectedOutput := `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -126,7 +126,7 @@ func TestInfoCommandOnlyColumnCommand(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
 
 	infoOutput := test.CaptureStdout(func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "info", "-c", "command"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "info", "-c", "command"}))
 	})
 
 	expectedOutput := `┏━━━━━━━━━━━━━━━━━━━┓
@@ -145,7 +145,7 @@ func TestInfoCommandPlusColumnCommand(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
 
 	infoOutput := test.CaptureStdout(func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "info", "-c", "+,command"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "info", "-c", "+,command"}))
 	})
 
 	expectedOutput := `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -163,13 +163,13 @@ func TestInfoCommandPlusColumnCommand(t *testing.T) {
 func TestInfoCommandAllColumnsRunning(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
 	defer func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "stop", "--nowait", ":"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "--context", "TEST", "stop", "--nowait", ":"}))
 	}()
 
-	assert.NoError(t, Run([]string{"pctl", "--no-color", "start", "--comment", "test comment", "km:spserver"}))
+	assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "start", "--comment", "test comment", "km:spserver"}))
 
 	infoOutput := test.CaptureStdout(func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "info", "-c", "status,stopped,running,vms,cpu%,mem%,gids,uptime,nice,comment,dirty,rss"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "info", "-c", "status,stopped,running,vms,cpu%,mem%,gids,uptime,nice,comment,dirty,rss"}))
 	})
 	assert.Regexp(t, "State\\s+Stopped\\s+Running\\s+Vms\\s+CPU %\\s+Memory %\\s+Gids\\s+Uptime\\s+Nice\\s+Comment\\s+Dirty\\s+Rss", infoOutput)
 	assert.Regexp(t, "1\\s+Running\\s+false\\s+true\\s+\\S+\\s+\\w+\\s+\\d+\\.\\d+\\s+\\S+\\s+\\d\\S+\\s+\\d+.+test comment", infoOutput)
@@ -179,13 +179,13 @@ func TestInfoCommandAllColumnsRunning(t *testing.T) {
 func TestInfoCommandAllColumns(t *testing.T) {
 	assert.NoError(t, test.SetConfigEnvPath("pctl.yml"))
 	defer func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "stop", "--nowait", ":"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "stop", "--nowait", ":"}))
 	}()
 
-	assert.NoError(t, Run([]string{"pctl", "--no-color", "start", "km:spserver"}))
+	assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "start", "km:spserver"}))
 
 	infoOutput := test.CaptureStdout(func() {
-		assert.NoError(t, Run([]string{"pctl", "--no-color", "info", "-c", "name,group,cwd,deps,user,metadata,command,env"}))
+		assert.NoError(t, Run([]string{"pctl", "--no-color", "--context", "TEST", "info", "-c", "name,group,cwd,deps,user,metadata,command,env"}))
 	})
 
 	assert.Regexp(t, "Name\\s+Group\\s+Cwd\\s+Dependencies\\s+Username\\s+Metadata\\s+Command\\s+Environment", infoOutput)

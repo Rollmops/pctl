@@ -1,9 +1,0 @@
-processes:
-- name: Sleep
-  cmd: [sleep, infinity]
-  stopStrategy:
-    script:
-      path: ~/stop_script.sh
-      args: [${pid}, ${cmd}, huhu, was geht]
-      forwardStdout: true
-      forwardStderr: true

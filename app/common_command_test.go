@@ -33,6 +33,7 @@ COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
+   --context value, -c value   allows you to run independent pctl contexts in parallel [$PCTL_CONTEXT]
    --loglevel value, -L value  level: trace,debug,info,warn,warning,error,fatal,panic (default: "warning") [$PCTL_LOG_LEVEL]
    --no-color                  do not use colors (default: false) [$PCTL_NO_COLOR]
    --help, -h                  show help (default: false)

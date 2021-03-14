@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"os/exec"
 	"time"
 )
 
@@ -9,7 +10,7 @@ type ExecProbe struct {
 	Exec `yaml:",inline"`
 }
 
-func (s *ExecProbe) Probe(process *Process, p *Probe) (bool, error) {
+func (s *ExecProbe) Probe(process *Process, _ *exec.Cmd, p *Probe) (bool, error) {
 	timeoutDuration, err := p.GetTimeout()
 	if err != nil {
 		return false, err

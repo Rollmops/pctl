@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	"os/exec"
 	"strconv"
 )
 
@@ -16,7 +17,7 @@ type HttpGetProbe struct {
 	HttpHeaders []*HttpHeader `yaml:"httpHeaders"`
 }
 
-func (p *HttpGetProbe) Probe(_ *Process, c *Probe) (bool, error) {
+func (p *HttpGetProbe) Probe(_ *Process, _ *exec.Cmd, c *Probe) (bool, error) {
 	timeout, err := c.GetTimeout()
 	if err != nil {
 		return false, err

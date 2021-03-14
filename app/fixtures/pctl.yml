@@ -4,3 +4,5 @@ processes:
   - name: spserver
     group: km
     command: [ sleep, infinity ]
+    env:
+      wuff: MIAU

@@ -68,11 +68,21 @@ func CreateCliApp() (*cli.App, error) {
 			if err != nil {
 				logrus.Fatalf(err.Error())
 			}
+			context := c.String("context")
+			if context != "" {
+				PctlInfoMarker = "__PCTL_INFO_" + context + "__"
+			}
 			return nil
 		},
 		Name:  "pctl",
 		Usage: "process control",
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "context",
+				EnvVars: []string{"PCTL_CONTEXT"},
+				Aliases: []string{"c"},
+				Usage:   "allows you to run independent pctl contexts in parallel",
+			},
 			&cli.StringFlag{
 				Name:    "loglevel",
 				Value:   "warning",
