@@ -1,8 +1,10 @@
 package app
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"os"
+	"strings"
 )
 
 type Context struct {
@@ -10,6 +12,7 @@ type Context struct {
 	OutputWriter *os.File
 	Processes    ProcessList
 	Cache        Cache
+	Context      string
 }
 
 var CurrentContext *Context
@@ -28,6 +31,10 @@ func (c *Context) GetProcessByConfig(processConfig *ProcessConfig) *Process {
 		}
 	}
 	return nil
+}
+
+func (c *Context) GetProcessEnvironmentMarker() string {
+	return fmt.Sprintf("__PCTL_INFO_%s__", strings.ToUpper(c.Context))
 }
 
 func (c *Context) InitializeRunningProcessInfo() error {

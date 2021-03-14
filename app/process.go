@@ -65,7 +65,7 @@ func (p *Process) Start(comment string) (*exec.Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
-	infoEnv := fmt.Sprintf("%s=%s", PctlInfoMarker, runningInfoStr)
+	infoEnv := fmt.Sprintf("%s=%s", CurrentContext.GetProcessEnvironmentMarker(), runningInfoStr)
 
 	cmd := exec.Command(p.Config.Command[0], p.Config.Command[1:]...)
 	cmd.Env = os.Environ()

@@ -64,13 +64,10 @@ func CreateCliApp() (*cli.App, error) {
 			logrus.SetLevel(level)
 			logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true, DisableColors: noColor})
 			CurrentContext.OutputWriter = os.Stdout
+			CurrentContext.Context = c.String("context")
 			err = CurrentContext.LoadConfig()
 			if err != nil {
 				logrus.Fatalf(err.Error())
-			}
-			context := c.String("context")
-			if context != "" {
-				PctlInfoMarker = "__PCTL_INFO_" + context + "__"
 			}
 			return nil
 		},
@@ -79,6 +76,7 @@ func CreateCliApp() (*cli.App, error) {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "context",
+				Value:   "default",
 				EnvVars: []string{"PCTL_CONTEXT"},
 				Aliases: []string{"c"},
 				Usage:   "allows you to run independent pctl contexts in parallel",

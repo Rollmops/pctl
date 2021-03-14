@@ -12,8 +12,6 @@ import (
 	"sync"
 )
 
-var PctlInfoMarker = "__PCTL_INFO__"
-
 type Cache struct {
 	runningInfoList []*RunningInfo
 	runningInfoMap  map[int32]*RunningInfo
@@ -33,7 +31,8 @@ func (c *Cache) refreshForPid(pid int32, channel RefreshChannelType, wg *sync.Wa
 }
 
 func (c *Cache) collectRunningInfo() error {
-	r := regexp.MustCompile(PctlInfoMarker + `=(\{.+\})`)
+	r := regexp.MustCompile(CurrentContext.GetProcessEnvironmentMarker() + `=(\{.+\})`)
+
 	c.runningInfoMap = make(map[int32]*RunningInfo)
 	out, err := exec.Command("ps", "e", "-ww").Output()
 	if err != nil {
@@ -43,7 +42,7 @@ func (c *Cache) collectRunningInfo() error {
 	for _, entry := range entries {
 		entry = strings.Trim(entry, " ")
 
-		if strings.Contains(entry, PctlInfoMarker) {
+		if strings.Contains(entry, CurrentContext.GetProcessEnvironmentMarker()) {
 			pid, err := strconv.Atoi(strings.Split(entry, " ")[0])
 			if err != nil {
 				return err
